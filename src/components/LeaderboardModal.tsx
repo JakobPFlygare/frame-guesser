@@ -1,23 +1,33 @@
 import { useEffect, useState } from 'react';
 import { getLeaderboard, type ScoreEntry } from '../lib/leaderboard';
+import { MODE_LABELS, type GameMode } from '../config/scoring';
 import { LeaderboardList } from './LeaderboardList';
 
 /** Full leaderboard, reachable any time from the header (no run required). */
-export function LeaderboardModal({ onClose }: { onClose: () => void }) {
+export function LeaderboardModal({
+  initialMode,
+  onClose,
+}: {
+  initialMode: GameMode;
+  onClose: () => void;
+}) {
+  const [mode, setMode] = useState<GameMode>(initialMode);
   const [board, setBoard] = useState<ScoreEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
-    getLeaderboard()
+    setLoading(true);
+    setError(null);
+    getLeaderboard(mode)
       .then((b) => alive && setBoard(b))
       .catch(() => alive && setError('Could not load the leaderboard.'))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, []);
+  }, [mode]);
 
   // Close on Escape.
   useEffect(() => {
@@ -41,6 +51,22 @@ export function LeaderboardModal({ onClose }: { onClose: () => void }) {
             ✕
           </button>
         </div>
+
+        <div className="mode-switch modal-modes" role="tablist" aria-label="Leaderboard mode">
+          {(['frames', 'classic'] as GameMode[]).map((m) => (
+            <button
+              key={m}
+              type="button"
+              role="tab"
+              aria-selected={mode === m}
+              className={`mode-tab${mode === m ? ' active' : ''}`}
+              onClick={() => setMode(m)}
+            >
+              {MODE_LABELS[m]}
+            </button>
+          ))}
+        </div>
+
         {loading ? (
           <p className="lb-empty">Loading…</p>
         ) : error ? (

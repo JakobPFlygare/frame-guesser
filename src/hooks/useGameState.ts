@@ -1,13 +1,13 @@
 import { useCallback, useMemo, useState } from 'react';
 import type { Puzzle } from '../data/puzzles';
-import { FREE_TILES, scoreFor, type ClueKey } from '../config/scoring';
+import { FREE_TILES, movieScore, type ClueKey, type GameMode } from '../config/scoring';
 import { isCorrectGuess } from '../lib/guessMatch';
 
 export type GameStatus = 'playing' | 'won' | 'lost';
 
 export type GameState = {
   revealed: number[]; // uncovered tile indices (includes the free starter)
-  cluesUsed: ClueKey[];
+  cluesUsed: ClueKey[]; // clues revealed on THIS movie (for value display)
   status: GameStatus;
   wrongGuess: string | null; // the wrong guess that ended the round, if any
   finalScore: number | null; // locked when the round ends
@@ -15,15 +15,20 @@ export type GameState = {
 
 export type GuessOutcome = { outcome: 'correct' | 'wrong' | 'ignored'; score: number };
 
-function liveScore(revealedCount: number, cluesUsed: ClueKey[]): number {
-  return scoreFor(revealedCount - FREE_TILES, cluesUsed);
-}
-
 /**
  * State for a single movie. The parent remounts this (React `key`) per movie,
  * so it's in-memory only. One wrong guess (or give-up) ends the movie.
+ *
+ * Scoring is mode-aware but purely a function of this movie's reveals/clues;
+ * run-level resources (lives, frames, once-per-run clues) live in <App> and the
+ * spend/affordability gating happens in <Game>.
  */
-export function useGameState(puzzle: Puzzle, resolvedTitle: string, initialReveal: number) {
+export function useGameState(
+  puzzle: Puzzle,
+  resolvedTitle: string,
+  initialReveal: number,
+  mode: GameMode,
+) {
   const [state, setState] = useState<GameState>(() => ({
     revealed: [initialReveal],
     cluesUsed: [],
@@ -32,9 +37,15 @@ export function useGameState(puzzle: Puzzle, resolvedTitle: string, initialRevea
     finalScore: null,
   }));
 
+  const liveScore = useCallback(
+    (revealedCount: number, cluesUsed: ClueKey[]) =>
+      movieScore(mode, revealedCount - FREE_TILES, cluesUsed),
+    [mode],
+  );
+
   const score = useMemo(
     () => state.finalScore ?? liveScore(state.revealed.length, state.cluesUsed),
-    [state.finalScore, state.revealed.length, state.cluesUsed],
+    [state.finalScore, state.revealed.length, state.cluesUsed, liveScore],
   );
 
   const revealTile = useCallback((index: number) => {
@@ -63,7 +74,7 @@ export function useGameState(puzzle: Puzzle, resolvedTitle: string, initialRevea
       setState((s) => ({ ...s, status: 'lost', wrongGuess: trimmed, finalScore: 0 }));
       return { outcome: 'wrong', score: 0 };
     },
-    [puzzle, resolvedTitle, state.status, state.revealed.length, state.cluesUsed, score],
+    [puzzle, resolvedTitle, state.status, state.revealed.length, state.cluesUsed, score, liveScore],
   );
 
   const giveUp = useCallback(() => {

@@ -1,14 +1,16 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { addScore, getLeaderboard, isHighScore, type ScoreEntry } from '../lib/leaderboard';
+import { MODE_LABELS, type GameMode } from '../config/scoring';
 import { LeaderboardList } from './LeaderboardList';
 
 type Props = {
+  mode: GameMode;
   totalScore: number;
   solved: number;
   onPlayAgain: () => void;
 };
 
-export function RunOverScreen({ totalScore, solved, onPlayAgain }: Props) {
+export function RunOverScreen({ mode, totalScore, solved, onPlayAgain }: Props) {
   const [board, setBoard] = useState<ScoreEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [saved, setSaved] = useState(false);
@@ -16,24 +18,24 @@ export function RunOverScreen({ totalScore, solved, onPlayAgain }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState('');
 
-  // Load the shared board once when the run ends.
+  // Load the shared board for THIS mode once when the run ends.
   useEffect(() => {
     let alive = true;
-    getLeaderboard()
+    getLeaderboard(mode)
       .then((b) => alive && setBoard(b))
       .catch(() => alive && setError('Could not load the leaderboard.'))
       .finally(() => alive && setLoading(false));
     return () => {
       alive = false;
     };
-  }, []);
+  }, [mode]);
 
   async function save(e: FormEvent) {
     e.preventDefault();
     setSaving(true);
     setError(null);
     try {
-      const next = await addScore(name, totalScore, solved);
+      const next = await addScore(name, totalScore, solved, mode);
       setBoard(next);
       setSaved(true);
     } catch {
@@ -52,7 +54,7 @@ export function RunOverScreen({ totalScore, solved, onPlayAgain }: Props) {
         Final score <strong>{totalScore}</strong>
       </p>
       <p className="run-solved">
-        {solved} {solved === 1 ? 'movie' : 'movies'} solved
+        {solved} {solved === 1 ? 'movie' : 'movies'} solved · {MODE_LABELS[mode]} mode
       </p>
 
       {!saved && totalScore > 0 && (
@@ -79,7 +81,7 @@ export function RunOverScreen({ totalScore, solved, onPlayAgain }: Props) {
       {error && <p className="lb-error">{error}</p>}
 
       <div className="leaderboard">
-        <h3 className="panel-title">Leaderboard</h3>
+        <h3 className="panel-title">{MODE_LABELS[mode]} leaderboard</h3>
         {loading ? <p className="lb-empty">Loading…</p> : <LeaderboardList board={board} />}
       </div>
 

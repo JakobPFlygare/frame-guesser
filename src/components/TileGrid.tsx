@@ -6,9 +6,11 @@ type Props = {
   onReveal: (index: number) => void;
   /** When true (game over), every tile is uncovered regardless of state. */
   revealAll: boolean;
+  /** When true, unopened tiles can't be revealed (no frames / can't afford). */
+  revealLocked: boolean;
 };
 
-export function TileGrid({ imageUrl, revealed, onReveal, revealAll }: Props) {
+export function TileGrid({ imageUrl, revealed, onReveal, revealAll, revealLocked }: Props) {
   const revealedSet = new Set(revealed);
 
   return (
@@ -30,14 +32,21 @@ export function TileGrid({ imageUrl, revealed, onReveal, revealAll }: Props) {
       >
         {Array.from({ length: TILE_COUNT }, (_, i) => {
           const isOpen = revealAll || revealedSet.has(i);
+          const locked = !isOpen && revealLocked;
           return (
             <button
               key={i}
               type="button"
-              className={`tile${isOpen ? ' tile-open' : ''}`}
+              className={`tile${isOpen ? ' tile-open' : ''}${locked ? ' tile-locked' : ''}`}
               onClick={() => onReveal(i)}
-              disabled={isOpen}
-              aria-label={isOpen ? `Tile ${i + 1} revealed` : `Reveal tile ${i + 1}`}
+              disabled={isOpen || locked}
+              aria-label={
+                isOpen
+                  ? `Tile ${i + 1} revealed`
+                  : locked
+                    ? `Tile ${i + 1} locked`
+                    : `Reveal tile ${i + 1}`
+              }
             />
           );
         })}

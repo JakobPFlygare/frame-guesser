@@ -15,12 +15,12 @@ import { dirname, join } from 'node:path';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 // ---- config: tune these to taste ----
-const MOVIE_PAGES = 18; // 20 per page; deeper = more variety (candidates before dedup)
-const TV_PAGES = 7;
-const MAX_MOVIES = 150;
-const MAX_TV = 50;
-const MOVIE_MIN_VOTES = 400; // higher = more mainstream / less obscure
-const TV_MIN_VOTES = 150;
+const MOVIE_PAGES = 45; // 20 per page; deeper = more variety (candidates before dedup)
+const TV_PAGES = 20;
+const MAX_MOVIES = 450;
+const MAX_TV = 150;
+const MOVIE_MIN_VOTES = 250; // higher = more mainstream / less obscure
+const TV_MIN_VOTES = 100;
 const CONCURRENCY = 12;
 // --------------------------------------
 

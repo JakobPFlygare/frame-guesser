@@ -6,14 +6,23 @@ reveal, the higher your score.
 
 ## Gameplay
 
-- **3 lives per run.** A wrong guess or a give-up costs a life; at 0 lives the run ends.
-- **One guess per frame.** Get it right to bank points and move on; miss (or give up) to
-  see the answer and lose a life.
-- **Score decays fast, then slow.** The first reveals cost far more than later ones
-  (exponential: `MAX_SCORE * DECAY_RATE^tiles`), so identifying it early is rewarded.
-- **One tile starts uncovered for free.** Clues (year / genre / director / lead actor) can
-  be revealed for a point cost.
-- **Leaderboard.** High scores for a run are saved locally (see note below) with your name.
+Two modes, each with its own leaderboard. Switch between them with the toggle under the
+header. One tile starts uncovered for free every movie, and it's always one guess per frame.
+
+**Frames (default) — survival.** You get a shared pool of frames (`START_FRAMES`, default 30)
+for the *whole run*. Every tile you uncover spends one frame; frames persist across movies and
+never come back, so late in a run you're guessing on little. A wrong guess or give-up ends the
+run. Clues (year / genre / director / lead actor) are **free**, but each can be used only
+**once per run** — spend them wisely. A solved movie banks a score based on how little of the
+frame you had to reveal (`MAX_SCORE * DECAY_RATE^tiles`).
+
+**Lives — budget.** 3 lives per run; a wrong guess or give-up costs one. Here points are a
+*spendable budget*: every movie starts at `MAX_SCORE`, and each tile (escalating cost) and each
+clue (flat cost) is deducted from it. **You can't buy what you can't afford** — so you can't
+just reveal everything to de-risk a guess. Whatever budget survives is what a correct guess banks.
+
+**Leaderboard.** Reachable any time from the header. Scores are per-mode, saved locally by
+default or shared via Supabase (see below).
 
 Built with Vite + React + TypeScript. Fully static — no backend, no API calls at runtime.
 
@@ -71,6 +80,9 @@ create table public.scores (
   name   text    not null check (char_length(name) between 1 and 20),
   score  integer not null check (score >= 0),
   solved integer not null default 0 check (solved >= 0),
+  -- Per-mode boards. Named `game_mode` (not `mode`) because `mode` collides with
+  -- a built-in Postgres aggregate and confuses the REST layer.
+  game_mode text not null default 'classic' check (game_mode in ('frames', 'classic')),
   created_at timestamptz not null default now()
 );
 
@@ -80,7 +92,17 @@ alter table public.scores enable row level security;
 create policy "read scores"   on public.scores for select using (true);
 create policy "insert scores" on public.scores for insert with check (
   char_length(name) between 1 and 20 and score >= 0 and score <= 1000000
+  and game_mode in ('frames', 'classic')
 );
+```
+
+**Already have a `scores` table from an earlier version?** Add the mode column instead —
+existing rows become Classic (they were the old lives-based scores):
+
+```sql
+alter table public.scores
+  add column game_mode text not null default 'classic'
+  check (game_mode in ('frames', 'classic'));
 ```
 
 Because RLS is on and only `select` + `insert` policies exist, visitors can't update or
@@ -99,8 +121,9 @@ delete rows in the Supabase **Table Editor**.
 
 ## Notes
 
-- Tuning knobs: grid size, starting score, decay rate, lives, and clue costs live in
-  `src/config/scoring.ts`.
+- Tuning knobs all live in `src/config/scoring.ts`: grid size, `MAX_SCORE`, `DECAY_RATE`,
+  `STARTING_LIVES`, `START_FRAMES`, tile costs (`TILE_BASE_COST` / `TILE_COST_STEP`), clue
+  costs, and `DEFAULT_MODE`.
 
 ## Attribution
 

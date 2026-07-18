@@ -1,18 +1,37 @@
 import type { GameStatus } from '../hooks/useGameState';
+import type { GameMode } from '../config/scoring';
 
 type Props = {
+  mode: GameMode;
   status: GameStatus;
   title: string;
   score: number;
   wrongGuess: string | null;
   gaveUp: boolean;
-  lastLife: boolean; // this was the final life — next goes to results
+  runEnding: boolean; // this movie ended the run — next goes to results
   onNext: () => void;
 };
 
-export function EndScreen({ status, title, score, wrongGuess, gaveUp, lastLife, onNext }: Props) {
+export function EndScreen({
+  mode,
+  status,
+  title,
+  score,
+  wrongGuess,
+  gaveUp,
+  runEnding,
+  onNext,
+}: Props) {
   if (status === 'playing') return null;
   const won = status === 'won';
+
+  // What the miss cost you, phrased per mode.
+  let lossNote: string;
+  if (mode === 'frames') {
+    lossNote = 'No points — run over.';
+  } else {
+    lossNote = runEnding ? 'No points — out of lives.' : 'No points — lost a life.';
+  }
 
   return (
     <div className="end-screen">
@@ -28,10 +47,10 @@ export function EndScreen({ status, title, score, wrongGuess, gaveUp, lastLife, 
           +<strong>{score}</strong> points
         </p>
       ) : (
-        <p className="end-score">No points — lost a life.</p>
+        <p className="end-score">{lossNote}</p>
       )}
       <button type="button" className="next-btn" onClick={onNext}>
-        {lastLife ? 'See results ▶' : 'Next movie ▶'}
+        {runEnding ? 'See results ▶' : 'Next movie ▶'}
       </button>
     </div>
   );
