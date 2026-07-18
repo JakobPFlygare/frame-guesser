@@ -41,6 +41,10 @@ function localAdd(entry: ScoreEntry): ScoreEntry[] {
 // ---------------------------------------------------------------------------
 // Supabase (PostgREST) — https://<project>.supabase.co/rest/v1/scores
 // ---------------------------------------------------------------------------
+// Normalize to the project origin, tolerating a pasted value that already
+// includes a trailing slash or the "/rest/v1" path.
+const REST_BASE = SUPABASE_URL.replace(/\/+$/, '').replace(/\/rest\/v1$/, '') + '/rest/v1';
+
 function restHeaders() {
   return {
     apikey: SUPABASE_ANON_KEY,
@@ -53,7 +57,7 @@ function restHeaders() {
 export async function getLeaderboard(): Promise<ScoreEntry[]> {
   if (!supabaseEnabled) return localGet();
   const url =
-    `${SUPABASE_URL}/rest/v1/scores` +
+    `${REST_BASE}/scores` +
     `?select=name,score,solved&order=score.desc&limit=${MAX_ENTRIES}`;
   const res = await fetch(url, { headers: restHeaders() });
   if (!res.ok) throw new Error(`Leaderboard fetch failed: ${res.status}`);
@@ -68,7 +72,7 @@ export async function addScore(
 ): Promise<ScoreEntry[]> {
   const entry: ScoreEntry = { name: name.trim().slice(0, 20) || 'Anonymous', score, solved };
   if (!supabaseEnabled) return localAdd(entry);
-  const res = await fetch(`${SUPABASE_URL}/rest/v1/scores`, {
+  const res = await fetch(`${REST_BASE}/scores`, {
     method: 'POST',
     headers: restHeaders(),
     body: JSON.stringify(entry),

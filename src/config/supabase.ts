@@ -12,7 +12,7 @@
 //   Project URL:  Supabase dashboard -> Project Settings -> Data API -> Project URL
 //   anon key:     Supabase dashboard -> Project Settings -> API Keys -> anon / public
 
-export const SUPABASE_URL = 'https://aokpokndegwgfahjbqae.supabase.co/rest/v1/';
+export const SUPABASE_URL = 'https://aokpokndegwgfahjbqae.supabase.co';
 export const SUPABASE_ANON_KEY = 'sb_publishable_yCaFgnp65nMu01Ami9dnzg_AVEaPkFl';
 
 export const supabaseEnabled = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
