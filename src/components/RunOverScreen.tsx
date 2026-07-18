@@ -1,5 +1,6 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { addScore, getLeaderboard, isHighScore, type ScoreEntry } from '../lib/leaderboard';
+import { LeaderboardList } from './LeaderboardList';
 
 type Props = {
   totalScore: number;
@@ -79,21 +80,7 @@ export function RunOverScreen({ totalScore, solved, onPlayAgain }: Props) {
 
       <div className="leaderboard">
         <h3 className="panel-title">Leaderboard</h3>
-        {loading ? (
-          <p className="lb-empty">Loading…</p>
-        ) : board.length > 0 ? (
-          <ol className="leaderboard-list">
-            {board.map((e, i) => (
-              <li key={i}>
-                <span className="lb-rank">{i + 1}</span>
-                <span className="lb-name">{e.name}</span>
-                <span className="lb-score">{e.score}</span>
-              </li>
-            ))}
-          </ol>
-        ) : (
-          <p className="lb-empty">No scores yet — be the first!</p>
-        )}
+        {loading ? <p className="lb-empty">Loading…</p> : <LeaderboardList board={board} />}
       </div>
 
       <button type="button" className="next-btn" onClick={onPlayAgain}>

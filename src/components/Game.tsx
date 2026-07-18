@@ -12,12 +12,22 @@ type Props = {
   data: PuzzleData;
   initialReveal: number;
   lives: number; // remaining lives (already reflects this movie's outcome)
+  totalScore: number; // whole-run score so far
   onWin: (score: number) => void;
   onLose: () => void;
   onNext: () => void;
 };
 
-export function Game({ puzzle, data, initialReveal, lives, onWin, onLose, onNext }: Props) {
+export function Game({
+  puzzle,
+  data,
+  initialReveal,
+  lives,
+  totalScore,
+  onWin,
+  onLose,
+  onNext,
+}: Props) {
   const { state, score, revealTile, useClue, submitGuess, giveUp } = useGameState(
     puzzle,
     data.title,
@@ -41,7 +51,7 @@ export function Game({ puzzle, data, initialReveal, lives, onWin, onLose, onNext
 
   return (
     <>
-      <Scoreboard score={score} tilesRevealed={state.revealed.length} />
+      <Scoreboard totalScore={totalScore} lives={lives} frameScore={score} />
 
       <TileGrid
         imageUrl={data.backdropUrl}

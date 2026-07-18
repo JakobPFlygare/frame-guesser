@@ -31,6 +31,9 @@
 
   /* Heart glyph used for the lives pips (masked so we can color/gradient it) */
   --heart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E");
+
+  /* Trophy glyph for the leaderboard nav button */
+  --trophy: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M18 2H6v2H2v4a4 4 0 0 0 4 4h.35A6 6 0 0 0 11 15.9V18H8a1 1 0 0 0-1 1v1h10v-1a1 1 0 0 0-1-1h-3v-2.1A6 6 0 0 0 17.65 12H18a4 4 0 0 0 4-4V4h-4V2zM6 10a2 2 0 0 1-2-2V6h2v4zm14-2a2 2 0 0 1-2 2V6h2v2z'/%3E%3Cpath fill='%23000' d='M7 21h10v1H7z'/%3E%3C/svg%3E");
   --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.28);
   --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.45);
   --ease: cubic-bezier(0.22, 1, 0.36, 1);

@@ -26,6 +26,8 @@ export function GuessBox({ onGuess, disabled }: Props) {
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (!value.trim()) return;
+    // Drop focus so the mobile keyboard closes before the result screen appears.
+    (document.activeElement as HTMLElement | null)?.blur();
     onGuess(value);
     setValue('');
     setOpen(false);

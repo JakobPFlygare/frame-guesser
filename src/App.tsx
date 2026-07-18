@@ -1,10 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import './App.css';
 import { PUZZLES } from './data/puzzles';
 import { loadPuzzleData } from './lib/tmdb';
 import { STARTING_LIVES, TILE_COUNT } from './config/scoring';
 import { Game } from './components/Game';
 import { RunOverScreen } from './components/RunOverScreen';
+import { LeaderboardModal } from './components/LeaderboardModal';
 
 function shuffle<T>(arr: T[]): T[] {
   const a = [...arr];
@@ -26,9 +27,16 @@ export default function App() {
   const [totalScore, setTotalScore] = useState(0);
   const [solved, setSolved] = useState(0);
   const [phase, setPhase] = useState<'playing' | 'runover'>('playing');
+  const [showLeaderboard, setShowLeaderboard] = useState(false);
 
   const puzzle = PUZZLES[order[pos]];
   const data = useMemo(() => loadPuzzleData(puzzle), [puzzle]);
+
+  // Jump back to the top whenever a new frame starts or the run ends, so the
+  // player isn't left scrolled down where the keyboard/guess box just were.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [round, phase]);
 
   function advance() {
     setRound((r) => r + 1);
@@ -73,27 +81,15 @@ export default function App() {
         <h1>
           Frame <span className="fg-mark">Guesser</span>
         </h1>
-        <div className="run-bar">
-          <div className="run-stat">
-            <span className="run-value">{totalScore}</span>
-            <span className="run-label">Score</span>
-          </div>
-          <div className="run-stat">
-            <span className="run-value lives">
-              {Array.from({ length: STARTING_LIVES }, (_, i) => (
-                <span key={i} className={i < lives ? 'life' : 'life spent'} aria-hidden="true" />
-              ))}
-              <span className="sr-only">
-                {lives} of {STARTING_LIVES} lives left
-              </span>
-            </span>
-            <span className="run-label">Lives</span>
-          </div>
-          <div className="run-stat">
-            <span className="run-value">{solved}</span>
-            <span className="run-label">Solved</span>
-          </div>
-        </div>
+        <button
+          type="button"
+          className="lb-nav"
+          onClick={() => setShowLeaderboard(true)}
+          aria-label="View leaderboard"
+        >
+          <span className="lb-nav-icon" aria-hidden="true" />
+          Leaderboard
+        </button>
       </header>
 
       {phase === 'runover' ? (
@@ -105,11 +101,14 @@ export default function App() {
           data={data}
           initialReveal={startTile}
           lives={lives}
+          totalScore={totalScore}
           onWin={handleWin}
           onLose={handleLose}
           onNext={handleNext}
         />
       )}
+
+      {showLeaderboard && <LeaderboardModal onClose={() => setShowLeaderboard(false)} />}
 
       <footer className="app-footer">
         <p className="attribution">

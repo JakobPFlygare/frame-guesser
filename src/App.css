@@ -7,11 +7,11 @@
   width: 100%;
   max-width: 540px;
   margin: 0 auto;
-  padding: max(16px, env(safe-area-inset-top)) 16px
-    calc(28px + env(safe-area-inset-bottom));
+  padding: max(12px, env(safe-area-inset-top)) 12px
+    calc(24px + env(safe-area-inset-bottom));
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 12px;
 }
 
 .sr-only {
@@ -49,15 +49,16 @@
    -------------------------------------------------------------------------- */
 .app-header {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 14px;
-  padding-top: 6px;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 2px 0;
 }
 .app-header h1 {
-  font-size: clamp(26px, 7vw, 34px);
+  font-size: clamp(21px, 6vw, 28px);
   font-weight: 700;
   letter-spacing: -0.02em;
+  white-space: nowrap;
 }
 .app-header h1 .fg-mark {
   color: transparent;
@@ -66,68 +67,47 @@
   background-clip: text;
 }
 
-/* --------------------------------------------------------------------------
-   Run bar (whole-run totals: score / lives / solved)
-   -------------------------------------------------------------------------- */
-.run-bar {
-  display: flex;
-  gap: 8px;
-  width: 100%;
-}
-.run-stat {
-  flex: 1;
-  background: linear-gradient(180deg, var(--panel), var(--panel-2));
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius);
-  padding: 10px 6px;
-  text-align: center;
-  box-shadow: var(--shadow);
-}
-.run-value {
-  display: block;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  line-height: 1.1;
-}
-.run-value.lives {
-  display: flex;
-  gap: 5px;
-  justify-content: center;
+/* Leaderboard nav (always available) */
+.lb-nav {
+  display: inline-flex;
   align-items: center;
-  min-height: 22px;
+  gap: 7px;
+  background: var(--panel-2);
+  border: 1px solid var(--border-soft);
+  color: var(--text);
+  border-radius: 999px;
+  padding: 8px 14px 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s var(--ease),
+    background 0.15s var(--ease),
+    transform 0.1s var(--ease);
 }
-.life {
+.lb-nav:hover {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--border));
+  background: var(--panel-3);
+}
+.lb-nav:active {
+  transform: scale(0.97);
+}
+.lb-nav-icon {
   width: 15px;
   height: 15px;
-  display: inline-block;
-  background: linear-gradient(180deg, #ff8a8a, var(--lose));
-  box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
-  -webkit-mask: var(--heart) center / contain no-repeat;
-  mask: var(--heart) center / contain no-repeat;
-  transition: transform 0.2s var(--ease);
-}
-.life.spent {
-  background: var(--border);
-  box-shadow: none;
-}
-.run-label {
-  display: block;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: var(--text-faint);
-  margin-top: 5px;
+  background: linear-gradient(180deg, var(--accent-hi), var(--accent-lo));
+  -webkit-mask: var(--trophy) center / contain no-repeat;
+  mask: var(--trophy) center / contain no-repeat;
 }
 
 /* --------------------------------------------------------------------------
-   Scoreboard (current frame: live score + tiles used)
+   Stat bar — one compact row: Score · Lives · This frame
    -------------------------------------------------------------------------- */
-.scoreboard {
+.statbar {
   display: flex;
   gap: 8px;
-  align-items: stretch;
+  width: 100%;
 }
 .stat {
   flex: 1;
@@ -135,13 +115,15 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  background: var(--panel);
+  gap: 3px;
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
   border: 1px solid var(--border-soft);
   border-radius: var(--radius);
-  padding: 8px 12px;
+  padding: 9px 8px;
+  box-shadow: var(--shadow);
 }
-.stat:first-child {
+/* Highlight the live "This frame" score — that's the number in play */
+.stat-frame {
   border-color: color-mix(in srgb, var(--accent) 35%, var(--border));
   background:
     radial-gradient(120% 120% at 50% 0%, var(--accent-glow), transparent 70%),
@@ -154,8 +136,29 @@
   font-variant-numeric: tabular-nums;
   line-height: 1;
 }
-.stat:first-child .stat-value {
+.stat-frame .stat-value {
   color: var(--accent);
+}
+.stat-value.lives {
+  display: flex;
+  gap: 5px;
+  justify-content: center;
+  align-items: center;
+  min-height: 22px;
+}
+.life {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  background: linear-gradient(180deg, #ff8a8a, var(--lose));
+  box-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+  -webkit-mask: var(--heart) center / contain no-repeat;
+  mask: var(--heart) center / contain no-repeat;
+  transition: transform 0.2s var(--ease);
+}
+.life.spent {
+  background: var(--border);
+  box-shadow: none;
 }
 .stat-label {
   font-size: 10px;
@@ -689,10 +692,84 @@ code {
    -------------------------------------------------------------------------- */
 @media (min-width: 600px) {
   .app {
-    padding-top: 28px;
-    gap: 20px;
+    padding-top: 24px;
+    gap: 16px;
   }
-  .run-value {
-    font-size: 22px;
+}
+
+/* --------------------------------------------------------------------------
+   Leaderboard modal
+   -------------------------------------------------------------------------- */
+@keyframes fade {
+  from {
+    opacity: 0;
   }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(6, 8, 12, 0.72);
+  backdrop-filter: blur(4px);
+  animation: fade 0.2s var(--ease) both;
+}
+.modal {
+  width: 100%;
+  max-width: 400px;
+  max-height: 84vh;
+  overflow-y: auto;
+  background: linear-gradient(180deg, var(--panel), var(--panel-2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-lg);
+  animation: pop 0.25s var(--ease) both;
+}
+.modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.modal-title {
+  font-size: 20px;
+  font-weight: 700;
+}
+.modal-close {
+  flex-shrink: 0;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  background: var(--panel-3);
+  border: 1px solid var(--border-soft);
+  border-radius: 50%;
+  color: var(--text-dim);
+  font-size: 15px;
+  cursor: pointer;
+  transition:
+    color 0.15s var(--ease),
+    background 0.15s var(--ease);
+}
+.modal-close:hover {
+  color: var(--text);
+  background: var(--border);
 }
