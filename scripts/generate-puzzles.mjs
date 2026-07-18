@@ -136,6 +136,9 @@ async function detail(item, mediaType) {
     title,
     backdropPaths,
     collectionId: d.belongs_to_collection?.id ?? null,
+    // Franchise name (e.g. "Star Wars" from "Star Wars Collection"), used to
+    // accept the franchise as a correct guess for every member film.
+    collectionName: d.belongs_to_collection?.name?.replace(/\s+Collection$/i, '').trim() || null,
     clues: {
       year: dateStr ? dateStr.slice(0, 4) : undefined,
       genre: d.genres?.[0]?.name,
@@ -203,17 +206,23 @@ function entryFor(m) {
     .filter(([, v]) => v)
     .map(([k, v]) => `${k}: ${JSON.stringify(v)}`)
     .join(', ');
-  // If the kept title is subtitled (e.g. "Captain America: Civil War"), accept
-  // the franchise base ("Captain America") as a correct guess too.
-  const base = baseName(m.title);
-  const aliasPart =
-    normalizeTitle(base) !== normalizeTitle(m.title)
-      ? `answerAliases: [${JSON.stringify(base)}], `
-      : '';
+  // Search terms make a title findable in the autocomplete when the player types
+  // a franchise or base name — "Star Wars" surfaces all three films, "Mad Max"
+  // surfaces "Mad Max: Fury Road". They are NOT accepted answers: the dropdown
+  // shows the full title and the player must pick the specific one, so typing a
+  // bare franchise name never wins on its own.
+  const titleNorm = normalizeTitle(m.title);
+  const terms = new Set();
+  const addTerm = (t) => {
+    if (t && normalizeTitle(t) !== titleNorm) terms.add(t);
+  };
+  addTerm(baseName(m.title));
+  addTerm(m.collectionName);
+  const searchPart = terms.size ? `searchTerms: ${JSON.stringify([...terms])}, ` : '';
   return (
     `  { id: ${JSON.stringify(id)}, mediaType: ${JSON.stringify(m.mediaType)}, ` +
     `tmdbId: ${m.tmdbId}, title: ${JSON.stringify(m.title)}, ` +
-    `backdropPaths: ${JSON.stringify(m.backdropPaths)}, ${aliasPart}clues: { ${clueStr} } },`
+    `backdropPaths: ${JSON.stringify(m.backdropPaths)}, ${searchPart}clues: { ${clueStr} } },`
   );
 }
 
@@ -233,6 +242,9 @@ export type Puzzle = {
   backdropPaths: string[];
   /** Accepted alternate spellings for the guess matcher. */
   answerAliases?: string[];
+  /** Franchise / base names that make this title findable in the autocomplete.
+   *  NOT accepted as answers — the player must still pick the full title. */
+  searchTerms?: string[];
   /** Baked clue values (year/genre/director/actor). */
   clues?: Partial<Record<ClueKey, string>>;
 };

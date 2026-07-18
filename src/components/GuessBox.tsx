@@ -7,7 +7,18 @@ type Props = {
   disabled: boolean;
 };
 
-const TITLE_POOL = Array.from(new Set(PUZZLES.map((p) => p.title)));
+// Each suggestion carries a search "haystack" (the title plus franchise/base
+// search terms) so typing "star wars" surfaces all three films and "mad max"
+// surfaces "Mad Max: Fury Road" — but we only ever display and submit the full
+// canonical title, so the player still has to pick the specific one.
+const SUGGESTION_POOL = Array.from(
+  new Map(
+    PUZZLES.map((p) => [
+      p.title,
+      { title: p.title, haystack: [p.title, ...(p.searchTerms ?? [])].map(normalize).join(' ') },
+    ]),
+  ).values(),
+);
 const MIN_CHARS = 2; // don't suggest until the player has committed to a guess
 const MAX_SUGGESTIONS = 6;
 
@@ -20,7 +31,9 @@ export function GuessBox({ onGuess, disabled }: Props) {
   const suggestions = useMemo(() => {
     const q = normalize(value);
     if (q.length < MIN_CHARS) return [];
-    return TITLE_POOL.filter((t) => normalize(t).includes(q)).slice(0, MAX_SUGGESTIONS);
+    return SUGGESTION_POOL.filter((s) => s.haystack.includes(q))
+      .slice(0, MAX_SUGGESTIONS)
+      .map((s) => s.title);
   }, [value]);
 
   function handleSubmit(e: FormEvent) {
