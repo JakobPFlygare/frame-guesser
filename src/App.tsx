@@ -70,7 +70,9 @@ export default function App() {
   return (
     <main className="app">
       <header className="app-header">
-        <h1>Frame Guesser</h1>
+        <h1>
+          Frame <span className="fg-mark">Guesser</span>
+        </h1>
         <div className="run-bar">
           <div className="run-stat">
             <span className="run-value">{totalScore}</span>
@@ -79,10 +81,11 @@ export default function App() {
           <div className="run-stat">
             <span className="run-value lives">
               {Array.from({ length: STARTING_LIVES }, (_, i) => (
-                <span key={i} className={i < lives ? 'heart' : 'heart lost'}>
-                  {i < lives ? '❤️' : '🤍'}
-                </span>
+                <span key={i} className={i < lives ? 'life' : 'life spent'} aria-hidden="true" />
               ))}
+              <span className="sr-only">
+                {lives} of {STARTING_LIVES} lives left
+              </span>
             </span>
             <span className="run-label">Lives</span>
           </div>

@@ -1,20 +1,48 @@
 :root {
-  --bg: #0f1117;
-  --panel: #191c25;
-  --panel-2: #21252f;
-  --border: #2e323d;
-  --text: #e6e8ee;
-  --text-dim: #9aa0ad;
-  --accent: #ffcc4d;
-  --accent-ink: #1a1204;
-  --win: #4ade80;
-  --lose: #f87171;
+  /* Surfaces — cool near-black with a hint of blue, layered for depth */
+  --bg: #0b0d13;
+  --bg-2: #0f1219;
+  --panel: #161a24;
+  --panel-2: #1d222e;
+  --panel-3: #252b39;
+  --border: #2b3142;
+  --border-soft: rgba(255, 255, 255, 0.06);
 
-  font: 16px/1.5 system-ui, 'Segoe UI', Roboto, sans-serif;
+  /* Text */
+  --text: #eef0f6;
+  --text-dim: #9198a8;
+  --text-faint: #626a7b;
+
+  /* Cinema amber accent + a cool counter-accent */
+  --accent: #ffc74d;
+  --accent-hi: #ffd77a;
+  --accent-lo: #f0a92e;
+  --accent-ink: #241803;
+  --accent-glow: rgba(255, 199, 77, 0.25);
+  --cool: #6ea8ff;
+
+  --win: #56d98a;
+  --lose: #ff6b6b;
+
+  /* Shape + motion */
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-sm: 10px;
+
+  /* Heart glyph used for the lives pips (masked so we can color/gradient it) */
+  --heart: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%23000' d='M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z'/%3E%3C/svg%3E");
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-lg: 0 8px 40px rgba(0, 0, 0, 0.45);
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
   color-scheme: dark;
   color: var(--text);
   background: var(--bg);
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 * {
@@ -24,6 +52,12 @@
 body {
   margin: 0;
   min-height: 100svh;
+  /* Layered ambient light: a warm top glow + a cool lower one over the base */
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(255, 199, 77, 0.08), transparent 60%),
+    radial-gradient(100% 60% at 100% 0%, rgba(110, 168, 255, 0.06), transparent 55%),
+    var(--bg);
+  background-attachment: fixed;
 }
 
 #root {
@@ -31,7 +65,21 @@ body {
 }
 
 h1,
-h2 {
+h2,
+h3 {
   color: var(--text);
   margin: 0;
+  font-family: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* Respect reduced-motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
 }
