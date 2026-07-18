@@ -28,12 +28,13 @@ export const MODE_BLURBS: Record<GameMode, string> = {
 
 export const DEFAULT_MODE: GameMode = 'frames';
 
-export type ClueKey = 'year' | 'genre' | 'director' | 'actor';
+export type ClueKey = 'pattern' | 'year' | 'genre' | 'director' | 'actor';
 
 /** Clue reveal order (easy -> revealing). */
-export const CLUE_ORDER: ClueKey[] = ['year', 'genre', 'director', 'actor'];
+export const CLUE_ORDER: ClueKey[] = ['pattern', 'year', 'genre', 'director', 'actor'];
 
 export const CLUE_LABELS: Record<ClueKey, string> = {
+  pattern: 'Title pattern',
   year: 'Release year',
   genre: 'Genre',
   director: 'Director',
@@ -52,6 +53,7 @@ export const STARTING_LIVES = 3;
 
 /** Flat point cost of each clue in Classic mode. */
 export const CLUE_COSTS: Record<ClueKey, number> = {
+  pattern: 80,
   year: 60,
   genre: 90,
   director: 130,

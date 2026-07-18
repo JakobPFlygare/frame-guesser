@@ -25,7 +25,7 @@ export function CluePanel({ mode, clues, used, runUsed, budget, onUseClue, disab
     <div className="clue-panel">
       <h2 className="panel-title">
         Clues
-        {frames && <span className="clue-note">free · 1× each</span>}
+        {frames && <span className="clue-note">1× each</span>}
       </h2>
       <ul className="clue-list">
         {CLUE_ORDER.map((key) => {
@@ -39,7 +39,9 @@ export function CluePanel({ mode, clues, used, runUsed, budget, onUseClue, disab
             <li key={key} className="clue-item">
               <span className="clue-name">{CLUE_LABELS[key]}</span>
               {isUsedHere ? (
-                <span className="clue-value">{value ?? 'Unknown'}</span>
+                <span className={`clue-value${key === 'pattern' ? ' clue-pattern' : ''}`}>
+                  {value ?? 'Unknown'}
+                </span>
               ) : spentThisRun ? (
                 <span className="clue-spent">Used this run</span>
               ) : (
@@ -49,7 +51,7 @@ export function CluePanel({ mode, clues, used, runUsed, budget, onUseClue, disab
                   disabled={disabled || tooPoor}
                   onClick={() => onUseClue(key)}
                 >
-                  {frames ? 'Reveal (free)' : `Reveal (−${cost})`}
+                  {frames ? 'Reveal' : `Reveal (−${cost})`}
                 </button>
               )}
             </li>

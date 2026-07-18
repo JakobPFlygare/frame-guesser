@@ -170,6 +170,9 @@
 /* --------------------------------------------------------------------------
    Frame + tile grid (the hero)
    -------------------------------------------------------------------------- */
+.frame-wrap {
+  position: relative;
+}
 .frame {
   position: relative;
   width: 100%;
@@ -381,6 +384,26 @@
   border-color: color-mix(in srgb, var(--lose) 60%, var(--border));
 }
 
+/* Dev-only playtesting shortcut (hidden in production builds). */
+.admin-btn {
+  align-self: center;
+  background: transparent;
+  border: 1px dashed color-mix(in srgb, var(--accent) 55%, var(--border));
+  color: color-mix(in srgb, var(--accent) 80%, var(--text-dim));
+  border-radius: var(--radius-sm);
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    color 0.15s var(--ease),
+    border-color 0.15s var(--ease);
+}
+.admin-btn:hover {
+  color: var(--accent);
+  border-color: var(--accent);
+}
+
 /* Shared primary button (Next / See results / Play again) */
 .next-btn {
   margin-top: 16px;
@@ -444,6 +467,13 @@
 .clue-value {
   font-weight: 600;
   font-size: 15px;
+}
+/* Title-pattern blanks: monospace + spacing so each underscore is countable. */
+.clue-pattern {
+  font-family: ui-monospace, 'SF Mono', 'Cascadia Code', Menlo, Consolas, monospace;
+  letter-spacing: 2px;
+  white-space: pre-wrap;
+  word-break: break-word;
 }
 .clue-button {
   border: 1px solid color-mix(in srgb, var(--accent) 50%, transparent);
@@ -843,10 +873,95 @@ code {
 .side-panels .lifeline-panel {
   padding: 14px;
 }
-/* Stack on very narrow screens so neither column gets cramped */
-@media (max-width: 400px) {
+/* On phones the two columns get cramped: stack them, put Lifelines ABOVE Clues,
+   and let the chips flow horizontally (wrapping) so several fit in the row. */
+@media (max-width: 640px) {
   .side-panels {
     grid-template-columns: 1fr;
+  }
+  .side-panels .lifeline-panel {
+    order: -1;
+  }
+  .lifeline-list {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+}
+
+/* Reward earned: pop over the frame, then drift down toward the panel below. */
+.reward-pop {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 5;
+}
+.reward-pop-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 18px 26px;
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--accent) 22%, rgba(10, 12, 18, 0.85));
+  border: 1px solid color-mix(in srgb, var(--accent) 60%, transparent);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 12px 40px color-mix(in srgb, var(--accent) 45%, transparent);
+  backdrop-filter: blur(2px);
+  animation: reward-pop 2.4s ease-in-out forwards;
+}
+.reward-pop-icon {
+  font-size: 42px;
+  line-height: 1;
+}
+.reward-pop-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, var(--accent) 70%, white);
+}
+.reward-pop-name {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+}
+@keyframes reward-pop {
+  0% {
+    transform: translateY(0) scale(0.6);
+    opacity: 0;
+  }
+  12% {
+    transform: translateY(0) scale(1.08);
+    opacity: 1;
+  }
+  20% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  62% {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(280px) scale(0.22);
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .reward-pop-card {
+    animation: reward-pop-fade 2s ease-in-out forwards;
+  }
+  @keyframes reward-pop-fade {
+    0%,
+    80% {
+      opacity: 1;
+    }
+    100% {
+      opacity: 0;
+    }
   }
 }
 
@@ -856,6 +971,22 @@ code {
   border: 1px solid var(--border-soft);
   border-radius: var(--radius);
   padding: 16px;
+  transition: box-shadow 0.3s ease;
+}
+/* Glow to "receive" a lifeline as the reward pop drifts in. */
+.lifeline-panel.just-landed {
+  animation: lifeline-land 1s ease-out 1.4s;
+}
+@keyframes lifeline-land {
+  0%,
+  100% {
+    box-shadow: none;
+    border-color: var(--border-soft);
+  }
+  40% {
+    box-shadow: 0 0 0 1px var(--accent), 0 0 24px color-mix(in srgb, var(--accent) 55%, transparent);
+    border-color: var(--accent);
+  }
 }
 .lifeline-active {
   display: flex;
@@ -922,10 +1053,21 @@ code {
   line-height: 1;
   flex-shrink: 0;
 }
+.lifeline-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
 .lifeline-label {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  line-height: 1.2;
+}
+/* Always-visible description — no hover needed (works on touch). */
+.lifeline-desc {
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-faint);
 }
 
 /* Clue panel extras (Frames mode) */

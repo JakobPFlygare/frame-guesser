@@ -12,16 +12,20 @@ header. One tile starts uncovered for free every movie, and it's always one gues
 **Frames (default) — survival.** You get a shared pool of frames (`START_FRAMES`, default 30)
 for the *whole run*. Every tile you uncover spends one frame; frames persist across movies and
 never come back, so late in a run you're guessing on little. A wrong guess or give-up ends the
-run. Clues (year / genre / director / lead actor) are **free**, but each can be used only
-**once per run** — spend them wisely. Your **score is simply how many movies you solve** — it's
+run. Clues (title pattern / year / genre / director / lead actor) are **free**, but each can be
+used only **once per run** — spend them wisely. The *title pattern* fills in the answer as blanks
+(e.g. `___ ________`) to reveal its word/letter shape without giving letters away. Your **score is simply how many movies you solve** — it's
 a survival streak, not a points tally.
 
-Every `LIFELINE_EVERY` solves (default 5) you earn a **lifeline**, drawn from a shuffled bag so
-the order is a surprise each run. Each is a one-time consumable held in a panel next to your
+Every run **opens with one free lifeline** (drawn from `STARTING_LIFELINE_POOL` — the dull
+openers like *+5 Frames* and *Clue Reset* are held back), and every `LIFELINE_EVERY` solves
+(default 5) you earn another, drawn from a shuffled bag so the order is a surprise each run. Each is a one-time consumable held in a panel next to your
 clues: **The Bomb** (reveal a 3×3 block free), **+5 Frames**, **Refund** (next 3 reveals free),
-**Corners** / **Crosshair** / **X-Ray** (free tile reveals), **Extra Life** (survive one wrong
-guess), **Skip** (skip a movie, no solve/no miss) and **Clue Reset** (refresh all clues). The
-pool lives in `src/config/lifelines.ts`.
+**Corners** / **Crosshair** / **X-Ray** (free tile reveals), **Extra Life** (*passive* — it
+automatically absorbs your next wrong guess, no activation needed), **Skip** (skip a movie, no
+solve/no miss) and **Clue Reset** (refresh all clues). When you earn one, it pops over the frame
+and drifts down into the panel so you can see what you got. The pool lives in
+`src/config/lifelines.ts`.
 
 **Lives — budget.** 3 lives per run; a wrong guess or give-up costs one. Here points are a
 *spendable budget*: every movie starts at `MAX_SCORE`, and each tile (escalating cost) and each
@@ -39,6 +43,10 @@ Built with Vite + React + TypeScript. Fully static — no backend, no API calls 
 npm install
 npm run dev
 ```
+
+While running the dev server (or on any URL with `?admin`), each frame shows a **✓ Mark correct
+(admin)** button that instantly solves it — handy for playtesting the run/lifeline flow without
+guessing. It's gated on `import.meta.env.DEV`, so it never appears in the production build.
 
 ## Puzzle data
 

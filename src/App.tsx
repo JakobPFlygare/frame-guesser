@@ -17,6 +17,7 @@ import {
   LIFELINE_POOL,
   PLUS_FRAMES_AMOUNT,
   REFUND_TILES,
+  STARTING_LIFELINE_POOL,
   shuffle,
   type LifelineKey,
 } from './config/lifelines';
@@ -54,6 +55,16 @@ function removeFirst(list: LifelineKey[], key: LifelineKey): LifelineKey[] {
   return [...list.slice(0, i), ...list.slice(i + 1)];
 }
 
+/** A random run-opening lifeline. */
+function startingLifeline(): LifelineKey {
+  return STARTING_LIFELINE_POOL[Math.floor(Math.random() * STARTING_LIFELINE_POOL.length)];
+}
+
+/** Frames runs open with one free lifeline; Classic uses no lifelines. */
+function initialInventory(m: GameMode): LifelineKey[] {
+  return m === 'frames' ? [startingLifeline()] : [];
+}
+
 export default function App() {
   const [mode, setMode] = useState<GameMode>(loadMode);
 
@@ -71,9 +82,12 @@ export default function App() {
   // Frames-mode lifelines: a shuffled bag drawn from every LIFELINE_EVERY solves.
   const [bag, setBag] = useState<LifelineKey[]>(() => shuffle(LIFELINE_POOL));
   const [earned, setEarned] = useState(0); // how many drawn from the bag so far
-  const [inventory, setInventory] = useState<LifelineKey[]>([]); // held, unspent
+  const [inventory, setInventory] = useState<LifelineKey[]>(() => initialInventory(mode)); // held, unspent
   const [freeReveals, setFreeReveals] = useState(0); // banked from Refund
-  const [shield, setShield] = useState(false); // Extra Life armed
+  // The lifeline just drawn (drives the "reward earned" pop animation); cleared
+  // once the animation finishes or the next movie starts. Seeded with the run's
+  // opening lifeline so the player clearly sees what they start with.
+  const [justEarned, setJustEarned] = useState<LifelineKey | null>(() => inventory[0] ?? null);
 
   const [totalScore, setTotalScore] = useState(0);
   const [solved, setSolved] = useState(0);
@@ -90,15 +104,18 @@ export default function App() {
   }, [round, phase]);
 
   // Start a fresh run in the given mode (resets every run-level resource).
-  function beginRun() {
+  // Defaults to the current mode; changeMode passes the new one explicitly since
+  // the `mode` state hasn't flushed yet at that call site.
+  function beginRun(m: GameMode = mode) {
+    const opening = initialInventory(m);
     setLives(STARTING_LIVES);
     setFramesLeft(START_FRAMES);
     setRunCluesUsed([]);
     setBag(shuffle(LIFELINE_POOL));
     setEarned(0);
-    setInventory([]);
+    setInventory(opening);
     setFreeReveals(0);
-    setShield(false);
+    setJustEarned(opening[0] ?? null); // pop the opener so it's clear what you start with
     setTotalScore(0);
     setSolved(0);
     setCurrentId(drawNext());
@@ -111,11 +128,12 @@ export default function App() {
     if (m === mode) return;
     setMode(m);
     saveMode(m);
-    beginRun(); // different rules -> restart the run
+    beginRun(m); // different rules -> restart the run (m: mode state not flushed yet)
   }
 
   // Move to the next movie, keeping run-level resources.
   function advance() {
+    setJustEarned(null);
     setRound((r) => r + 1);
     setStartTile(randomTile());
     setCurrentId(drawNext());
@@ -131,6 +149,7 @@ export default function App() {
     const key = b[earned];
     setEarned((n) => n + 1);
     setInventory((inv) => [...inv, key]);
+    setJustEarned(key); // trigger the "reward earned" pop
   }
 
   function handleWin(movieScore: number) {
@@ -156,9 +175,8 @@ export default function App() {
       case 'refund':
         setFreeReveals((f) => f + REFUND_TILES);
         break;
-      case 'extraLife':
-        setShield(true);
-        break;
+      // 'extraLife' is passive — it isn't "used"; it's consumed automatically by
+      // a wrong guess (in <Game>), which just removes it from the inventory below.
       case 'clueReset':
         setRunCluesUsed([]);
         break;
@@ -224,12 +242,12 @@ export default function App() {
           nextRewardIn={nextRewardIn}
           inventory={inventory}
           freeReveals={freeReveals}
-          shield={shield}
+          justEarned={justEarned}
           onWin={handleWin}
           onLose={handleLose}
           onSpendFrame={() => setFramesLeft((f) => Math.max(0, f - 1))}
           onConsumeFreeReveal={() => setFreeReveals((f) => Math.max(0, f - 1))}
-          onConsumeShield={() => setShield(false)}
+          onRewardSeen={() => setJustEarned(null)}
           onUseRunClue={(clue) => setRunCluesUsed((cs) => (cs.includes(clue) ? cs : [...cs, clue]))}
           onLifeline={handleLifeline}
           onAdvance={advance}

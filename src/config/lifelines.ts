@@ -22,20 +22,20 @@ export type LifelineKey =
 export type LifelineDef = { label: string; icon: string; blurb: string };
 
 export const LIFELINES: Record<LifelineKey, LifelineDef> = {
-  bomb: { label: 'The Bomb', icon: '💣', blurb: 'Reveal a random 3×3 block of tiles, free.' },
+  bomb: { label: 'The Bomb', icon: '💣', blurb: 'Reveal a random 3×3 block of tiles.' },
   plusFrames: { label: '+5 Frames', icon: '🎞️', blurb: 'Add 5 frames to your pool.' },
   refund: { label: 'Refund', icon: '💸', blurb: 'Your next 3 reveals are free.' },
-  corners: { label: 'Corners', icon: '📐', blurb: 'Reveal all four corner tiles, free.' },
+  corners: { label: 'Corners', icon: '📐', blurb: 'Reveal all four corner tiles.' },
   crosshair: {
     label: 'Crosshair',
     icon: '🎯',
-    blurb: 'Reveal the centre tile and its neighbours, free.',
+    blurb: 'Reveal the centre tile and its neighbours.',
   },
-  xray: { label: 'X-Ray', icon: '🩻', blurb: 'Reveal a full random row, free.' },
+  xray: { label: 'X-Ray', icon: '🩻', blurb: 'Reveal a full random row.' },
   extraLife: {
     label: 'Extra Life',
     icon: '🛡️',
-    blurb: 'Survive one wrong guess without ending the run.',
+    blurb: 'Automatically absorbs your next wrong guess — no need to activate it.',
   },
   skip: { label: 'Skip', icon: '⏭️', blurb: 'Skip this movie — no solve, no miss.' },
   clueReset: { label: 'Clue Reset', icon: '🔄', blurb: 'Refresh all clues so each can be used again.' },
@@ -56,6 +56,17 @@ export const LIFELINE_POOL: LifelineKey[] = [
 
 /** Lifelines whose effect reveals tiles on the CURRENT movie (need an active movie). */
 export const REVEAL_LIFELINES: LifelineKey[] = ['bomb', 'corners', 'crosshair', 'xray'];
+
+// Every Frames run opens with one free lifeline. Some make a dull opening gift —
+// '+5 Frames' is a yawn when your pool is already full, and 'Clue Reset' does
+// nothing until you've actually spent a clue — so they're held back from the
+// run-opener draw (they can still turn up as a normal every-5 reward).
+export const STARTING_LIFELINE_EXCLUDE: LifelineKey[] = ['plusFrames', 'clueReset'];
+
+/** The pool the run-opening lifeline is drawn from. */
+export const STARTING_LIFELINE_POOL: LifelineKey[] = LIFELINE_POOL.filter(
+  (k) => !STARTING_LIFELINE_EXCLUDE.includes(k),
+);
 
 /** Earn one lifeline every this many solves. */
 export const LIFELINE_EVERY = 5;

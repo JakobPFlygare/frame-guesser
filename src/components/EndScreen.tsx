@@ -58,7 +58,7 @@ export function EndScreen({
         <p className="end-score">{lossNote}</p>
       )}
       <button type="button" className="next-btn" onClick={onNext}>
-        {runEnding ? 'See results ▶' : 'Next movie ▶'}
+        {runEnding ? 'See results ▶' : 'Next title ▶'}
       </button>
     </div>
   );

@@ -14,6 +14,7 @@ import { TileGrid } from './TileGrid';
 import { GuessBox } from './GuessBox';
 import { CluePanel } from './CluePanel';
 import { LifelinePanel } from './LifelinePanel';
+import { RewardPop } from './RewardPop';
 import { Scoreboard } from './Scoreboard';
 import { EndScreen } from './EndScreen';
 
@@ -29,12 +30,12 @@ type Props = {
   nextRewardIn: number; // solves until the next lifeline — Frames mode
   inventory: LifelineKey[]; // earned, unspent lifelines — Frames mode
   freeReveals: number; // banked free reveals (Refund) — Frames mode
-  shield: boolean; // Extra Life armed — Frames mode
+  justEarned: LifelineKey | null; // lifeline just drawn (drives the reward pop)
   onWin: (score: number) => void;
   onLose: () => void;
   onSpendFrame: () => void;
   onConsumeFreeReveal: () => void;
-  onConsumeShield: () => void;
+  onRewardSeen: () => void;
   onUseRunClue: (clue: ClueKey) => void;
   onLifeline: (key: LifelineKey) => void;
   onAdvance: () => void;
@@ -53,12 +54,12 @@ export function Game({
   nextRewardIn,
   inventory,
   freeReveals,
-  shield,
+  justEarned,
   onWin,
   onLose,
   onSpendFrame,
   onConsumeFreeReveal,
-  onConsumeShield,
+  onRewardSeen,
   onUseRunClue,
   onLifeline,
   onAdvance,
@@ -74,6 +75,11 @@ export function Game({
   // Set when a wrong guess is absorbed by Extra Life — routes to the next movie
   // instead of ending the run.
   const [savedByShield, setSavedByShield] = useState(false);
+  const hasExtraLife = inventory.includes('extraLife');
+  // Playtesting aid: a "mark correct" shortcut. On in dev (`npm run dev`) and via
+  // ?admin — never in the production build, so players can't see it.
+  const adminMode =
+    import.meta.env.DEV || new URLSearchParams(window.location.search).has('admin');
 
   // When the frame resolves (a guess lands or the player gives up), the result
   // screen replaces the guess box — jump back to the top so it's in view.
@@ -141,9 +147,11 @@ export function Game({
     if (r.outcome === 'correct') {
       onWin(r.score);
     } else if (r.outcome === 'wrong') {
-      if (mode === 'frames' && shield) {
-        setSavedByShield(true); // Extra Life takes the hit; run continues
-        onConsumeShield();
+      if (mode === 'frames' && hasExtraLife) {
+        // Extra Life is passive: it auto-consumes to absorb the miss so the run
+        // continues. onLifeline removes it from the inventory.
+        setSavedByShield(true);
+        onLifeline('extraLife');
       } else {
         onLose();
       }
@@ -185,13 +193,16 @@ export function Game({
         nextRewardIn={nextRewardIn}
       />
 
-      <TileGrid
-        imageUrl={data.backdropUrl}
-        revealed={state.revealed}
-        onReveal={handleReveal}
-        revealAll={gameOver}
-        revealLocked={revealLocked}
-      />
+      <div className="frame-wrap">
+        <TileGrid
+          imageUrl={data.backdropUrl}
+          revealed={state.revealed}
+          onReveal={handleReveal}
+          revealAll={gameOver}
+          revealLocked={revealLocked}
+        />
+        {mode === 'frames' && <RewardPop reward={justEarned} onDone={onRewardSeen} />}
+      </div>
 
       {gameOver ? (
         <EndScreen
@@ -214,6 +225,16 @@ export function Game({
           <button type="button" className="giveup-btn" onClick={handleGiveUp}>
             Give up &amp; reveal
           </button>
+          {adminMode && (
+            <button
+              type="button"
+              className="admin-btn"
+              onClick={() => handleGuess(data.title)}
+              title="Dev only — instantly solve this frame"
+            >
+              ✓ Mark correct (admin)
+            </button>
+          )}
         </div>
       )}
 
@@ -231,8 +252,8 @@ export function Game({
           <LifelinePanel
             inventory={inventory}
             nextRewardIn={nextRewardIn}
-            shield={shield}
             freeReveals={freeReveals}
+            justLanded={justEarned !== null}
             disabled={gameOver}
             onUse={applyLifeline}
           />

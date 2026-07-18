@@ -54,7 +54,7 @@ export function RunOverScreen({ mode, totalScore, solved, onPlayAgain }: Props) 
         Final score <strong>{totalScore}</strong>
       </p>
       <p className="run-solved">
-        {solved} {solved === 1 ? 'movie' : 'movies'} solved · {MODE_LABELS[mode]} mode
+        {solved} {solved === 1 ? 'title' : 'titles'} solved · {MODE_LABELS[mode]} mode
       </p>
 
       {!saved && totalScore > 0 && (
