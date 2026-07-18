@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Generated dev tool (rebuild with: node scripts/build-image-review.mjs)
+/public/image-review.html
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

@@ -8,11 +8,18 @@
 //   so the app itself needs NO token and makes NO API calls at runtime — images
 //   come from the public image CDN. That makes it safe to host statically.
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+// Backdrop paths a human reviewed and rejected (via scripts/build-image-review.mjs).
+// These are never included, even if TMDB still serves them. Edit the JSON to curate.
+const BLOCKLIST_FILE = join(ROOT, 'scripts/backdrop-blocklist.json');
+const BLOCKLIST = new Set(
+  existsSync(BLOCKLIST_FILE) ? JSON.parse(readFileSync(BLOCKLIST_FILE, 'utf8')) : [],
+);
 
 // ---- config: tune these to taste ----
 const MOVIE_PAGES = 45; // 20 per page; deeper = more variety (candidates before dedup)
@@ -133,17 +140,22 @@ async function detail(item, mediaType) {
   const byQuality = (a, b) =>
     (b.vote_average ?? 0) - (a.vote_average ?? 0) || (b.vote_count ?? 0) - (a.vote_count ?? 0);
   const frames = (d.images?.backdrops ?? [])
-    .filter((b) => b.file_path && b.iso_639_1 == null && (b.aspect_ratio ?? 0) >= 1.7)
+    .filter(
+      (b) =>
+        b.file_path &&
+        !BLOCKLIST.has(b.file_path) &&
+        b.iso_639_1 == null &&
+        (b.aspect_ratio ?? 0) >= 1.7,
+    )
     .sort(byQuality);
   const strong = frames.filter((b) => (b.vote_count ?? 0) >= MIN_BACKDROP_VOTES);
   // Prefer well-seen frames; if a title has too few, fall back to any textless
   // frame, then to TMDB's own hero backdrop, so every title still yields an image.
   const primary = item.backdrop_path || d.backdrop_path;
   const ranked = (strong.length >= 2 ? strong : frames).map((b) => b.file_path);
-  const backdropPaths = [...new Set([...ranked, primary].filter(Boolean))].slice(
-    0,
-    BACKDROPS_PER_TITLE,
-  );
+  const backdropPaths = [...new Set([...ranked, primary].filter(Boolean))]
+    .filter((p) => !BLOCKLIST.has(p))
+    .slice(0, BACKDROPS_PER_TITLE);
   if (!title || backdropPaths.length === 0) return null;
   return {
     tmdbId: item.id,
