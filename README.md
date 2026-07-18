@@ -13,8 +13,15 @@ header. One tile starts uncovered for free every movie, and it's always one gues
 for the *whole run*. Every tile you uncover spends one frame; frames persist across movies and
 never come back, so late in a run you're guessing on little. A wrong guess or give-up ends the
 run. Clues (year / genre / director / lead actor) are **free**, but each can be used only
-**once per run** — spend them wisely. A solved movie banks a score based on how little of the
-frame you had to reveal (`MAX_SCORE * DECAY_RATE^tiles`).
+**once per run** — spend them wisely. Your **score is simply how many movies you solve** — it's
+a survival streak, not a points tally.
+
+Every `LIFELINE_EVERY` solves (default 5) you earn a **lifeline**, drawn from a shuffled bag so
+the order is a surprise each run. Each is a one-time consumable held in a panel next to your
+clues: **The Bomb** (reveal a 3×3 block free), **+5 Frames**, **Refund** (next 3 reveals free),
+**Corners** / **Crosshair** / **X-Ray** (free tile reveals), **Extra Life** (survive one wrong
+guess), **Skip** (skip a movie, no solve/no miss) and **Clue Reset** (refresh all clues). The
+pool lives in `src/config/lifelines.ts`.
 
 **Lives — budget.** 3 lives per run; a wrong guess or give-up costs one. Here points are a
 *spendable budget*: every movie starts at `MAX_SCORE`, and each tile (escalating cost) and each
@@ -121,9 +128,10 @@ delete rows in the Supabase **Table Editor**.
 
 ## Notes
 
-- Tuning knobs all live in `src/config/scoring.ts`: grid size, `MAX_SCORE`, `DECAY_RATE`,
-  `STARTING_LIVES`, `START_FRAMES`, tile costs (`TILE_BASE_COST` / `TILE_COST_STEP`), clue
-  costs, and `DEFAULT_MODE`.
+- Tuning knobs live in `src/config/scoring.ts`: grid size, `MAX_SCORE`, `STARTING_LIVES`,
+  `START_FRAMES`, tile costs (`TILE_BASE_COST` / `TILE_COST_STEP`), clue costs, and
+  `DEFAULT_MODE`. Frames-mode lifelines are in `src/config/lifelines.ts`: the `LIFELINE_POOL`,
+  `LIFELINE_EVERY` (solves per reward), `PLUS_FRAMES_AMOUNT`, and `REFUND_TILES`.
 
 ## Attribution
 

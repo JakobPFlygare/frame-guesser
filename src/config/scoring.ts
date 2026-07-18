@@ -85,22 +85,16 @@ export function classicBudget(paidTiles: number, cluesUsed: ClueKey[]): number {
 // Frames (survival) mode — a shared pool of reveals for the WHOLE run.
 // Each paid tile spends one frame; frames persist across movies and don't come
 // back. Clues are free but each can be used only ONCE per run. A wrong guess or
-// give-up ends the run. A solved movie banks a score based on how little of the
-// frame you had to reveal (clues don't affect it).
+// give-up ends the run. Scoring is dead simple: your score IS how many movies
+// you solve — every solve is worth one. Lifelines (earned every few solves)
+// add the depth; see config/lifelines.ts.
 // ---------------------------------------------------------------------------
 
 /** Frames granted at the start of a Frames-mode run. */
 export const START_FRAMES = 30;
 
-/**
- * Score decays exponentially per paid tile: score = MAX_SCORE * DECAY_RATE^paid.
- * < 1 means the FIRST reveals hurt far more than later ones.
- */
-export const DECAY_RATE = 0.82;
-
-export function framesScore(paidTiles: number): number {
-  return Math.round(MAX_SCORE * Math.pow(DECAY_RATE, Math.max(0, paidTiles)));
-}
+/** In Frames mode a solved movie is worth exactly one — score = movies solved. */
+export const SOLVE_VALUE = 1;
 
 /** Live score on offer for the current movie, by mode. */
 export function movieScore(
@@ -108,5 +102,5 @@ export function movieScore(
   paidTiles: number,
   cluesUsed: ClueKey[],
 ): number {
-  return mode === 'classic' ? classicBudget(paidTiles, cluesUsed) : framesScore(paidTiles);
+  return mode === 'classic' ? classicBudget(paidTiles, cluesUsed) : SOLVE_VALUE;
 }

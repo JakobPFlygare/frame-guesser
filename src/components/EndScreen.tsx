@@ -9,6 +9,7 @@ type Props = {
   wrongGuess: string | null;
   gaveUp: boolean;
   runEnding: boolean; // this movie ended the run — next goes to results
+  savedByShield: boolean; // a wrong guess was absorbed by Extra Life
   onNext: () => void;
 };
 
@@ -20,6 +21,7 @@ export function EndScreen({
   wrongGuess,
   gaveUp,
   runEnding,
+  savedByShield,
   onNext,
 }: Props) {
   if (status === 'playing') return null;
@@ -28,7 +30,9 @@ export function EndScreen({
   // What the miss cost you, phrased per mode.
   let lossNote: string;
   if (mode === 'frames') {
-    lossNote = 'No points — run over.';
+    lossNote = savedByShield
+      ? '🛡️ Extra Life absorbed the miss — the run goes on.'
+      : 'Run over.';
   } else {
     lossNote = runEnding ? 'No points — out of lives.' : 'No points — lost a life.';
   }
@@ -43,9 +47,13 @@ export function EndScreen({
         It was <strong>{title}</strong>
       </p>
       {won ? (
-        <p className="end-score">
-          +<strong>{score}</strong> points
-        </p>
+        mode === 'frames' ? (
+          <p className="end-score">Solved! ✅ Keep the streak going.</p>
+        ) : (
+          <p className="end-score">
+            +<strong>{score}</strong> points
+          </p>
+        )
       ) : (
         <p className="end-score">{lossNote}</p>
       )}

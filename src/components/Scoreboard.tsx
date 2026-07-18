@@ -2,18 +2,20 @@ import { STARTING_LIVES, type GameMode } from '../config/scoring';
 
 type Props = {
   mode: GameMode;
-  /** Whole-run total score. */
+  /** Whole-run total score (Frames: movies solved; Classic: banked points). */
   totalScore: number;
   /** Remaining lives (Classic mode). */
   lives: number;
   /** Remaining frames (Frames mode). */
   framesLeft: number;
-  /** Live score on offer for the current frame. */
+  /** Live budget on offer for the current frame (Classic mode). */
   frameScore: number;
+  /** Solves until the next lifeline (Frames mode). */
+  nextRewardIn: number;
 };
 
-/** Single compact stat row above the frame: Score · Lives/Frames · This frame. */
-export function Scoreboard({ mode, totalScore, lives, framesLeft, frameScore }: Props) {
+/** Compact stat row above the frame. Third stat is mode-specific. */
+export function Scoreboard({ mode, totalScore, lives, framesLeft, frameScore, nextRewardIn }: Props) {
   return (
     <div className="statbar">
       <div className="stat">
@@ -40,10 +42,17 @@ export function Scoreboard({ mode, totalScore, lives, framesLeft, frameScore }: 
         </div>
       )}
 
-      <div className="stat stat-frame">
-        <span className="stat-value">{frameScore}</span>
-        <span className="stat-label">This frame</span>
-      </div>
+      {mode === 'classic' ? (
+        <div className="stat stat-frame">
+          <span className="stat-value">{frameScore}</span>
+          <span className="stat-label">This frame</span>
+        </div>
+      ) : (
+        <div className="stat stat-frame">
+          <span className="stat-value">{nextRewardIn}</span>
+          <span className="stat-label">Next reward</span>
+        </div>
+      )}
     </div>
   );
 }

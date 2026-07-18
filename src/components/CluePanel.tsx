@@ -25,7 +25,7 @@ export function CluePanel({ mode, clues, used, runUsed, budget, onUseClue, disab
     <div className="clue-panel">
       <h2 className="panel-title">
         Clues
-        {frames && <span className="clue-note">free · once each per run</span>}
+        {frames && <span className="clue-note">free · 1× each</span>}
       </h2>
       <ul className="clue-list">
         {CLUE_ORDER.map((key) => {

@@ -12,6 +12,14 @@ import {
   type ClueKey,
   type GameMode,
 } from './config/scoring';
+import {
+  LIFELINE_EVERY,
+  LIFELINE_POOL,
+  PLUS_FRAMES_AMOUNT,
+  REFUND_TILES,
+  shuffle,
+  type LifelineKey,
+} from './config/lifelines';
 import { Game } from './components/Game';
 import { RunOverScreen } from './components/RunOverScreen';
 import { LeaderboardModal } from './components/LeaderboardModal';
@@ -39,6 +47,13 @@ function saveMode(m: GameMode) {
   }
 }
 
+/** Remove the first occurrence of `key` from a lifeline inventory. */
+function removeFirst(list: LifelineKey[], key: LifelineKey): LifelineKey[] {
+  const i = list.indexOf(key);
+  if (i < 0) return list;
+  return [...list.slice(0, i), ...list.slice(i + 1)];
+}
+
 export default function App() {
   const [mode, setMode] = useState<GameMode>(loadMode);
 
@@ -53,6 +68,13 @@ export default function App() {
   const [framesLeft, setFramesLeft] = useState(START_FRAMES); // Frames
   const [runCluesUsed, setRunCluesUsed] = useState<ClueKey[]>([]); // Frames
 
+  // Frames-mode lifelines: a shuffled bag drawn from every LIFELINE_EVERY solves.
+  const [bag, setBag] = useState<LifelineKey[]>(() => shuffle(LIFELINE_POOL));
+  const [earned, setEarned] = useState(0); // how many drawn from the bag so far
+  const [inventory, setInventory] = useState<LifelineKey[]>([]); // held, unspent
+  const [freeReveals, setFreeReveals] = useState(0); // banked from Refund
+  const [shield, setShield] = useState(false); // Extra Life armed
+
   const [totalScore, setTotalScore] = useState(0);
   const [solved, setSolved] = useState(0);
   const [phase, setPhase] = useState<'playing' | 'runover'>('playing');
@@ -60,6 +82,7 @@ export default function App() {
 
   const puzzle = puzzleFor(currentId);
   const data = useMemo(() => loadPuzzleData(puzzle), [puzzle]);
+  const nextRewardIn = LIFELINE_EVERY - (solved % LIFELINE_EVERY);
 
   // Jump back to the top whenever a new frame starts or the run ends.
   useEffect(() => {
@@ -67,10 +90,15 @@ export default function App() {
   }, [round, phase]);
 
   // Start a fresh run in the given mode (resets every run-level resource).
-  function beginRun(m: GameMode) {
+  function beginRun() {
     setLives(STARTING_LIVES);
     setFramesLeft(START_FRAMES);
     setRunCluesUsed([]);
+    setBag(shuffle(LIFELINE_POOL));
+    setEarned(0);
+    setInventory([]);
+    setFreeReveals(0);
+    setShield(false);
     setTotalScore(0);
     setSolved(0);
     setCurrentId(drawNext());
@@ -83,7 +111,7 @@ export default function App() {
     if (m === mode) return;
     setMode(m);
     saveMode(m);
-    beginRun(m); // different rules -> restart the run
+    beginRun(); // different rules -> restart the run
   }
 
   // Move to the next movie, keeping run-level resources.
@@ -93,15 +121,54 @@ export default function App() {
     setCurrentId(drawNext());
   }
 
+  // Draw the next lifeline from the bag into the inventory (Frames mode).
+  function earnLifeline() {
+    let b = bag;
+    if (earned >= b.length) {
+      b = [...b, ...shuffle(LIFELINE_POOL)]; // exhausted the bag -> refill
+      setBag(b);
+    }
+    const key = b[earned];
+    setEarned((n) => n + 1);
+    setInventory((inv) => [...inv, key]);
+  }
+
   function handleWin(movieScore: number) {
+    const nextSolved = solved + 1;
     setTotalScore((s) => s + movieScore);
-    setSolved((n) => n + 1);
+    setSolved(nextSolved);
+    if (mode === 'frames' && nextSolved % LIFELINE_EVERY === 0) earnLifeline();
   }
 
   // A miss: costs a life in Classic; in Frames it ends the run (handled by the
   // Game's "See results" button routing to finish()).
   function handleLose() {
     if (mode === 'classic') setLives((l) => l - 1);
+  }
+
+  // Spend a lifeline. Tile-reveal effects are applied inside <Game>; the run-
+  // level ones happen here. Either way the lifeline is removed from inventory.
+  function handleLifeline(key: LifelineKey) {
+    switch (key) {
+      case 'plusFrames':
+        setFramesLeft((f) => f + PLUS_FRAMES_AMOUNT);
+        break;
+      case 'refund':
+        setFreeReveals((f) => f + REFUND_TILES);
+        break;
+      case 'extraLife':
+        setShield(true);
+        break;
+      case 'clueReset':
+        setRunCluesUsed([]);
+        break;
+      case 'skip':
+        advance();
+        break;
+      default:
+        break; // reveal effects handled in <Game>
+    }
+    setInventory((inv) => removeFirst(inv, key));
   }
 
   return (
@@ -141,7 +208,7 @@ export default function App() {
           mode={mode}
           totalScore={totalScore}
           solved={solved}
-          onPlayAgain={() => beginRun(mode)}
+          onPlayAgain={beginRun}
         />
       ) : (
         <Game
@@ -154,10 +221,17 @@ export default function App() {
           framesLeft={framesLeft}
           runCluesUsed={runCluesUsed}
           totalScore={totalScore}
+          nextRewardIn={nextRewardIn}
+          inventory={inventory}
+          freeReveals={freeReveals}
+          shield={shield}
           onWin={handleWin}
           onLose={handleLose}
           onSpendFrame={() => setFramesLeft((f) => Math.max(0, f - 1))}
+          onConsumeFreeReveal={() => setFreeReveals((f) => Math.max(0, f - 1))}
+          onConsumeShield={() => setShield(false)}
           onUseRunClue={(clue) => setRunCluesUsed((cs) => (cs.includes(clue) ? cs : [...cs, clue]))}
+          onLifeline={handleLifeline}
           onAdvance={advance}
           onFinish={() => setPhase('runover')}
         />

@@ -1,11 +1,19 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import type { Puzzle } from '../data/puzzles';
 import type { PuzzleData } from '../lib/tmdb';
 import { useGameState } from '../hooks/useGameState';
 import { FREE_TILES, classicTileCost, type ClueKey, type GameMode } from '../config/scoring';
+import {
+  CORNER_TILES,
+  CROSSHAIR_TILES,
+  randomBlockTiles,
+  randomRowTiles,
+  type LifelineKey,
+} from '../config/lifelines';
 import { TileGrid } from './TileGrid';
 import { GuessBox } from './GuessBox';
 import { CluePanel } from './CluePanel';
+import { LifelinePanel } from './LifelinePanel';
 import { Scoreboard } from './Scoreboard';
 import { EndScreen } from './EndScreen';
 
@@ -18,10 +26,17 @@ type Props = {
   framesLeft: number; // remaining frames — Frames mode (run-level)
   runCluesUsed: ClueKey[]; // clues already spent this run — Frames mode
   totalScore: number; // whole-run score so far
+  nextRewardIn: number; // solves until the next lifeline — Frames mode
+  inventory: LifelineKey[]; // earned, unspent lifelines — Frames mode
+  freeReveals: number; // banked free reveals (Refund) — Frames mode
+  shield: boolean; // Extra Life armed — Frames mode
   onWin: (score: number) => void;
   onLose: () => void;
   onSpendFrame: () => void;
+  onConsumeFreeReveal: () => void;
+  onConsumeShield: () => void;
   onUseRunClue: (clue: ClueKey) => void;
+  onLifeline: (key: LifelineKey) => void;
   onAdvance: () => void;
   onFinish: () => void;
 };
@@ -35,10 +50,17 @@ export function Game({
   framesLeft,
   runCluesUsed,
   totalScore,
+  nextRewardIn,
+  inventory,
+  freeReveals,
+  shield,
   onWin,
   onLose,
   onSpendFrame,
+  onConsumeFreeReveal,
+  onConsumeShield,
   onUseRunClue,
+  onLifeline,
   onAdvance,
   onFinish,
 }: Props) {
@@ -49,6 +71,9 @@ export function Game({
     mode,
   );
   const gameOver = state.status !== 'playing';
+  // Set when a wrong guess is absorbed by Extra Life — routes to the next movie
+  // instead of ending the run.
+  const [savedByShield, setSavedByShield] = useState(false);
 
   // When the frame resolves (a guess lands or the player gives up), the result
   // screen replaces the guess box — jump back to the top so it's in view.
@@ -58,16 +83,19 @@ export function Game({
 
   const paid = state.revealed.length - FREE_TILES;
   const nextTileCost = classicTileCost(paid + 1);
+  const framesExhausted = framesLeft <= 0 && freeReveals <= 0;
   // Can the player uncover another tile right now?
-  const revealLocked = mode === 'classic' ? score < nextTileCost : framesLeft <= 0;
+  const revealLocked = mode === 'classic' ? score < nextTileCost : framesExhausted;
 
   function handleReveal(i: number) {
     if (gameOver || state.revealed.includes(i)) return;
     if (mode === 'classic') {
       if (score < nextTileCost) return; // can't afford it
       revealTile(i);
-    } else {
-      if (framesLeft <= 0) return; // no frames left
+    } else if (freeReveals > 0) {
+      revealTile(i); // Refund covers this one
+      onConsumeFreeReveal();
+    } else if (framesLeft > 0) {
       revealTile(i);
       onSpendFrame();
     }
@@ -85,10 +113,41 @@ export function Game({
     }
   }
 
+  // Spend a lifeline. Tile-reveal effects happen here (they need this movie's
+  // reveal setter); everything else is handled up in <App> via onLifeline.
+  function applyLifeline(key: LifelineKey) {
+    if (gameOver) return;
+    switch (key) {
+      case 'bomb':
+        randomBlockTiles(Math.random).forEach((t) => revealTile(t));
+        break;
+      case 'corners':
+        CORNER_TILES.forEach((t) => revealTile(t));
+        break;
+      case 'crosshair':
+        CROSSHAIR_TILES.forEach((t) => revealTile(t));
+        break;
+      case 'xray':
+        randomRowTiles(Math.random).forEach((t) => revealTile(t));
+        break;
+      default:
+        break; // plusFrames / refund / extraLife / clueReset / skip -> App
+    }
+    onLifeline(key);
+  }
+
   function handleGuess(text: string) {
     const r = submitGuess(text);
-    if (r.outcome === 'correct') onWin(r.score);
-    else if (r.outcome === 'wrong') onLose();
+    if (r.outcome === 'correct') {
+      onWin(r.score);
+    } else if (r.outcome === 'wrong') {
+      if (mode === 'frames' && shield) {
+        setSavedByShield(true); // Extra Life takes the hit; run continues
+        onConsumeShield();
+      } else {
+        onLose();
+      }
+    }
   }
 
   function handleGiveUp() {
@@ -97,18 +156,23 @@ export function Game({
   }
 
   const gaveUp = state.status === 'lost' && !state.wrongGuess;
-  // A loss ends the run in Frames mode always, and in Classic when it was the last life.
-  const runEnding = state.status === 'lost' && (mode === 'frames' || lives <= 0);
+  // A loss ends the run in Frames mode (unless a shield absorbed it), and in
+  // Classic when it was the last life.
+  const runEnding =
+    state.status === 'lost' && (mode === 'classic' ? lives <= 0 : !savedByShield);
 
-  const revealHint = gameOver
-    ? null
-    : mode === 'classic'
-      ? revealLocked
-        ? 'Out of points — make your guess'
-        : `Next tile costs −${nextTileCost}`
-      : revealLocked
-        ? 'No frames left — guess on what you have'
-        : `${framesLeft} ${framesLeft === 1 ? 'frame' : 'frames'} left to spend`;
+  let revealHint: string | null = null;
+  if (!gameOver) {
+    if (mode === 'classic') {
+      revealHint = revealLocked ? 'Out of points — make your guess' : `Next tile costs −${nextTileCost}`;
+    } else if (freeReveals > 0) {
+      revealHint = `${freeReveals} free reveal${freeReveals === 1 ? '' : 's'} · then ${framesLeft} frames`;
+    } else if (framesExhausted) {
+      revealHint = 'No frames left — guess on what you have';
+    } else {
+      revealHint = `${framesLeft} ${framesLeft === 1 ? 'frame' : 'frames'} left to spend`;
+    }
+  }
 
   return (
     <>
@@ -118,6 +182,7 @@ export function Game({
         lives={lives}
         framesLeft={framesLeft}
         frameScore={score}
+        nextRewardIn={nextRewardIn}
       />
 
       <TileGrid
@@ -137,11 +202,14 @@ export function Game({
           wrongGuess={state.wrongGuess}
           gaveUp={gaveUp}
           runEnding={runEnding}
+          savedByShield={savedByShield}
           onNext={runEnding ? onFinish : onAdvance}
         />
       ) : (
         <div className="controls">
-          {revealHint && <p className={`reveal-hint${revealLocked ? ' locked' : ''}`}>{revealHint}</p>}
+          {revealHint && (
+            <p className={`reveal-hint${revealLocked ? ' locked' : ''}`}>{revealHint}</p>
+          )}
           <GuessBox onGuess={handleGuess} disabled={gameOver} />
           <button type="button" className="giveup-btn" onClick={handleGiveUp}>
             Give up &amp; reveal
@@ -149,15 +217,37 @@ export function Game({
         </div>
       )}
 
-      <CluePanel
-        mode={mode}
-        clues={data.clues}
-        used={state.cluesUsed}
-        runUsed={runCluesUsed}
-        budget={score}
-        onUseClue={handleUseClue}
-        disabled={gameOver}
-      />
+      {mode === 'frames' ? (
+        <div className="side-panels">
+          <CluePanel
+            mode={mode}
+            clues={data.clues}
+            used={state.cluesUsed}
+            runUsed={runCluesUsed}
+            budget={score}
+            onUseClue={handleUseClue}
+            disabled={gameOver}
+          />
+          <LifelinePanel
+            inventory={inventory}
+            nextRewardIn={nextRewardIn}
+            shield={shield}
+            freeReveals={freeReveals}
+            disabled={gameOver}
+            onUse={applyLifeline}
+          />
+        </div>
+      ) : (
+        <CluePanel
+          mode={mode}
+          clues={data.clues}
+          used={state.cluesUsed}
+          runUsed={runCluesUsed}
+          budget={score}
+          onUseClue={handleUseClue}
+          disabled={gameOver}
+        />
+      )}
     </>
   );
 }
