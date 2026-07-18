@@ -19,7 +19,7 @@ export function TileGrid({ imageUrl, revealed, onReveal, revealAll, revealLocked
         <img className="frame-img" src={imageUrl} alt="Hidden frame" />
       ) : (
         <div className="frame-img frame-placeholder">
-          <span>No image — add a TMDB token or a backdropPath to this puzzle.</span>
+          <span>No image — add a TMDB token or a backdropPaths entry to this puzzle.</span>
         </div>
       )}
 

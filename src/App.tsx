@@ -7,6 +7,7 @@ import {
   DEFAULT_MODE,
   MODE_LABELS,
   START_FRAMES,
+  SOLVE_FRAME_REWARD,
   STARTING_LIVES,
   TILE_COUNT,
   type ClueKey,
@@ -156,7 +157,12 @@ export default function App() {
     const nextSolved = solved + 1;
     setTotalScore((s) => s + movieScore);
     setSolved(nextSolved);
-    if (mode === 'frames' && nextSolved % LIFELINE_EVERY === 0) earnLifeline();
+    if (mode === 'frames') {
+      // Reward each solve with a frame back, so a good streak can claw its way
+      // out of a near-empty pool instead of only ever bleeding down.
+      setFramesLeft((f) => f + SOLVE_FRAME_REWARD);
+      if (nextSolved % LIFELINE_EVERY === 0) earnLifeline();
+    }
   }
 
   // A miss: costs a life in Classic; in Frames it ends the run (handled by the
@@ -226,7 +232,7 @@ export default function App() {
           mode={mode}
           totalScore={totalScore}
           solved={solved}
-          onPlayAgain={beginRun}
+          onPlayAgain={() => beginRun()}
         />
       ) : (
         <Game

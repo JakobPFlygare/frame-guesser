@@ -27,11 +27,19 @@ export function titlePattern(title: string): string {
   return title.replace(/[\p{L}\p{N}]/gu, '_');
 }
 
+/** Pick one of a title's backdrops at random, so a run doesn't always show the
+ *  same still for a given movie/show. Called once per movie (memoised in App). */
+function pickBackdrop(paths: string[] | undefined): string | null {
+  if (!paths || paths.length === 0) return null;
+  return paths[Math.floor(Math.random() * paths.length)];
+}
+
 export function loadPuzzleData(puzzle: Puzzle): PuzzleData {
   const c = puzzle.clues ?? {};
+  const path = pickBackdrop(puzzle.backdropPaths);
   return {
     title: puzzle.title,
-    backdropUrl: puzzle.backdropPath ? imageUrl(puzzle.backdropPath) : null,
+    backdropUrl: path ? imageUrl(path) : null,
     clues: {
       pattern: titlePattern(puzzle.title),
       year: c.year,

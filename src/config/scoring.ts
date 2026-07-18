@@ -95,6 +95,9 @@ export function classicBudget(paidTiles: number, cluesUsed: ClueKey[]): number {
 /** Frames granted at the start of a Frames-mode run. */
 export const START_FRAMES = 30;
 
+/** Frames handed back for each correct guess, so a streak can outrun the drain. */
+export const SOLVE_FRAME_REWARD = 1;
+
 /** In Frames mode a solved movie is worth exactly one — score = movies solved. */
 export const SOLVE_VALUE = 1;
 

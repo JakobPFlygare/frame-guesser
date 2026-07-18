@@ -56,12 +56,14 @@ guessing. It's gated on `import.meta.env.DEV`, so it never appears in the produc
 node scripts/generate-puzzles.mjs
 ```
 
-The generator pulls the most-voted (famous, non-obscure) movies + TV shows from TMDB,
-collapses each franchise to a single entry (so "Thor" is the only Thor — no
-"Thor: Ragnarok"), and **bakes** the title, backdrop path, and clues into the file. Because
-everything is baked in, the app needs **no TMDB token at runtime** and makes no API calls —
-images come from TMDB's public image CDN. Tune the counts / vote thresholds at the top of
-the script.
+The generator pulls the most-voted (famous, non-obscure) movies + TV shows from TMDB
+(**250 titles** total — 190 movies + 60 TV), collapses each franchise to a single entry
+(so "Thor" is the only Thor — no "Thor: Ragnarok"), and **bakes** the title, **several
+backdrop paths** (`BACKDROPS_PER_TITLE`, default 6), and clues into the file. The app picks
+**one backdrop at random per run**, so you won't see the exact same Interstellar still every
+time it comes up. Because everything is baked in, the app needs **no TMDB token at runtime**
+and makes no API calls — images come from TMDB's public image CDN. Tune the counts / vote
+thresholds at the top of the script.
 
 Generating requires a token: create a free account at themoviedb.org, and put your API
 Read Access Token (or v3 key) in `.env.local` as `VITE_TMDB_TOKEN=...`. This file is

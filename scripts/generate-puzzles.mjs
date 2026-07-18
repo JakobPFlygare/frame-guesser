@@ -17,10 +17,11 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 // ---- config: tune these to taste ----
 const MOVIE_PAGES = 45; // 20 per page; deeper = more variety (candidates before dedup)
 const TV_PAGES = 20;
-const MAX_MOVIES = 450;
-const MAX_TV = 150;
+const MAX_MOVIES = 190;
+const MAX_TV = 60; // 190 + 60 = 250 titles total
 const MOVIE_MIN_VOTES = 250; // higher = more mainstream / less obscure
 const TV_MIN_VOTES = 100;
+const BACKDROPS_PER_TITLE = 6; // frames kept per title; the app picks one per run
 const CONCURRENCY = 12;
 // --------------------------------------
 
@@ -109,20 +110,31 @@ function franchiseKey(title) {
   return normalizeTitle(baseName(title)).replace(/^(?:the|a|an)\s+/, '');
 }
 
-// Fetch details (collection + clues) for one discover result.
+// Fetch details (collection + clues + several backdrops) for one discover result.
 async function detail(item, mediaType) {
-  const d = await tmdb(`${mediaType}/${item.id}`, { append_to_response: 'credits' });
+  const d = await tmdb(`${mediaType}/${item.id}`, {
+    append_to_response: 'credits,images',
+    // Keep language-neutral frames too, so we're not limited to English-text art.
+    include_image_language: 'en,null',
+  });
   const title = mediaType === 'movie' ? d.title : d.name;
   const dateStr = (mediaType === 'movie' ? d.release_date : d.first_air_date) || '';
   const director =
     d.credits?.crew?.find((c) => c.job === 'Director')?.name || d.created_by?.[0]?.name;
-  const backdropPath = item.backdrop_path || d.backdrop_path;
-  if (!title || !backdropPath) return null;
+  // Several backdrops per title (TMDB returns them vote-sorted, best first), so
+  // the app can show a different frame each run instead of the same still.
+  const primary = item.backdrop_path || d.backdrop_path;
+  const extra = (d.images?.backdrops ?? []).map((b) => b.file_path).filter(Boolean);
+  const backdropPaths = [...new Set([primary, ...extra].filter(Boolean))].slice(
+    0,
+    BACKDROPS_PER_TITLE,
+  );
+  if (!title || backdropPaths.length === 0) return null;
   return {
     tmdbId: item.id,
     mediaType,
     title,
-    backdropPath,
+    backdropPaths,
     collectionId: d.belongs_to_collection?.id ?? null,
     clues: {
       year: dateStr ? dateStr.slice(0, 4) : undefined,
@@ -201,7 +213,7 @@ function entryFor(m) {
   return (
     `  { id: ${JSON.stringify(id)}, mediaType: ${JSON.stringify(m.mediaType)}, ` +
     `tmdbId: ${m.tmdbId}, title: ${JSON.stringify(m.title)}, ` +
-    `backdropPath: ${JSON.stringify(m.backdropPath)}, ${aliasPart}clues: { ${clueStr} } },`
+    `backdropPaths: ${JSON.stringify(m.backdropPaths)}, ${aliasPart}clues: { ${clueStr} } },`
   );
 }
 
@@ -216,8 +228,9 @@ export type Puzzle = {
   tmdbId: number;
   /** Canonical answer, used for guess matching. */
   title: string;
-  /** Backdrop path like "/abc123.jpg" (served from the public image CDN). */
-  backdropPath: string;
+  /** Candidate backdrop paths like "/abc123.jpg" (public image CDN); the app
+   *  picks one at random per run so the same title isn't always the same frame. */
+  backdropPaths: string[];
   /** Accepted alternate spellings for the guess matcher. */
   answerAliases?: string[];
   /** Baked clue values (year/genre/director/actor). */
