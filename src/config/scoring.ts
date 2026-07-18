@@ -95,8 +95,17 @@ export function classicBudget(paidTiles: number, cluesUsed: ClueKey[]): number {
 /** Frames granted at the start of a Frames-mode run. */
 export const START_FRAMES = 30;
 
-/** Frames handed back for each correct guess, so a streak can outrun the drain. */
-export const SOLVE_FRAME_REWARD = 1;
+/**
+ * Frames handed back for a solve, scaled by how few you spent cracking it — a
+ * clean read fuels the run far more than a tile-by-tile grind, so skill (not just
+ * survival) tops up the economy. `framesUsed` counts only frames actually spent
+ * (not the free starting tile, Refund reveals, or lifeline reveals).
+ */
+export function solveFrameReward(framesUsed: number): number {
+  if (framesUsed === 0) return 5;
+  if (framesUsed <= 2) return 3;
+  return 1;
+}
 
 /** In Frames mode a solved movie is worth exactly one — score = movies solved. */
 export const SOLVE_VALUE = 1;

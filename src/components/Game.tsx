@@ -31,7 +31,7 @@ type Props = {
   inventory: LifelineKey[]; // earned, unspent lifelines — Frames mode
   freeReveals: number; // banked free reveals (Refund) — Frames mode
   justEarned: LifelineKey | null; // lifeline just drawn (drives the reward pop)
-  onWin: (score: number) => void;
+  onWin: (score: number, framesUsed: number) => void;
   onLose: () => void;
   onSpendFrame: () => void;
   onConsumeFreeReveal: () => void;
@@ -72,9 +72,12 @@ export function Game({
     mode,
   );
   const gameOver = state.status !== 'playing';
-  // Set when a wrong guess is absorbed by Extra Life — routes to the next movie
-  // instead of ending the run.
+  // Set when a wrong guess is absorbed by Extra Life — spares a life and routes
+  // to the next movie.
   const [savedByShield, setSavedByShield] = useState(false);
+  // Frames actually spent on THIS movie (excludes the free tile, Refund reveals,
+  // and lifeline reveals) — drives the tiered solve reward.
+  const [framesUsed, setFramesUsed] = useState(0);
   const hasExtraLife = inventory.includes('extraLife');
   // Playtesting aid: a "mark correct" shortcut. On in dev (`npm run dev`) and via
   // ?admin — never in the production build, so players can't see it.
@@ -104,6 +107,7 @@ export function Game({
     } else if (framesLeft > 0) {
       revealTile(i);
       onSpendFrame();
+      setFramesUsed((n) => n + 1);
     }
   }
 
@@ -145,11 +149,11 @@ export function Game({
   function handleGuess(text: string) {
     const r = submitGuess(text);
     if (r.outcome === 'correct') {
-      onWin(r.score);
+      onWin(r.score, framesUsed);
     } else if (r.outcome === 'wrong') {
       if (mode === 'frames' && hasExtraLife) {
-        // Extra Life is passive: it auto-consumes to absorb the miss so the run
-        // continues. onLifeline removes it from the inventory.
+        // Extra Life is passive: it auto-consumes to spare a life and carry on to
+        // the next movie. onLifeline removes it from the inventory.
         setSavedByShield(true);
         onLifeline('extraLife');
       } else {
@@ -164,10 +168,9 @@ export function Game({
   }
 
   const gaveUp = state.status === 'lost' && !state.wrongGuess;
-  // A loss ends the run in Frames mode (unless a shield absorbed it), and in
-  // Classic when it was the last life.
-  const runEnding =
-    state.status === 'lost' && (mode === 'classic' ? lives <= 0 : !savedByShield);
+  // A loss ends the run only once lives run out (both modes). An Extra Life that
+  // absorbed the miss spared the life, so the run always continues in that case.
+  const runEnding = state.status === 'lost' && !savedByShield && lives <= 0;
 
   let revealHint: string | null = null;
   if (!gameOver) {
@@ -190,7 +193,6 @@ export function Game({
         lives={lives}
         framesLeft={framesLeft}
         frameScore={score}
-        nextRewardIn={nextRewardIn}
       />
 
       <div className="frame-wrap">

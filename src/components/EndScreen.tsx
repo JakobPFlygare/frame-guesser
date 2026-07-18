@@ -27,14 +27,15 @@ export function EndScreen({
   if (status === 'playing') return null;
   const won = status === 'won';
 
-  // What the miss cost you, phrased per mode.
+  // What the miss cost you. Both modes run on lives now; Extra Life (Frames) can
+  // spare one entirely.
   let lossNote: string;
-  if (mode === 'frames') {
-    lossNote = savedByShield
-      ? '🛡️ Extra Life absorbed the miss — the run goes on.'
-      : 'Run over.';
+  if (savedByShield) {
+    lossNote = '🛡️ Extra Life absorbed the miss — no life lost.';
+  } else if (runEnding) {
+    lossNote = 'No points — out of lives.';
   } else {
-    lossNote = runEnding ? 'No points — out of lives.' : 'No points — lost a life.';
+    lossNote = 'No points — lost a life.';
   }
 
   return (

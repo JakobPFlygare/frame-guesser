@@ -4,18 +4,30 @@ type Props = {
   mode: GameMode;
   /** Whole-run total score (Frames: movies solved; Classic: banked points). */
   totalScore: number;
-  /** Remaining lives (Classic mode). */
+  /** Remaining lives (both modes). */
   lives: number;
   /** Remaining frames (Frames mode). */
   framesLeft: number;
   /** Live budget on offer for the current frame (Classic mode). */
   frameScore: number;
-  /** Solves until the next lifeline (Frames mode). */
-  nextRewardIn: number;
 };
 
-/** Compact stat row above the frame. Third stat is mode-specific. */
-export function Scoreboard({ mode, totalScore, lives, framesLeft, frameScore, nextRewardIn }: Props) {
+/** A row of pips showing lives remaining vs spent. */
+function Lives({ lives }: { lives: number }) {
+  return (
+    <span className="stat-value lives">
+      {Array.from({ length: STARTING_LIVES }, (_, i) => (
+        <span key={i} className={i < lives ? 'life' : 'life spent'} aria-hidden="true" />
+      ))}
+      <span className="sr-only">
+        {lives} of {STARTING_LIVES} lives left
+      </span>
+    </span>
+  );
+}
+
+/** Compact stat row above the frame. The middle/third stats are mode-specific. */
+export function Scoreboard({ mode, totalScore, lives, framesLeft, frameScore }: Props) {
   return (
     <div className="statbar">
       <div className="stat">
@@ -25,14 +37,7 @@ export function Scoreboard({ mode, totalScore, lives, framesLeft, frameScore, ne
 
       {mode === 'classic' ? (
         <div className="stat">
-          <span className="stat-value lives">
-            {Array.from({ length: STARTING_LIVES }, (_, i) => (
-              <span key={i} className={i < lives ? 'life' : 'life spent'} aria-hidden="true" />
-            ))}
-            <span className="sr-only">
-              {lives} of {STARTING_LIVES} lives left
-            </span>
-          </span>
+          <Lives lives={lives} />
           <span className="stat-label">Lives</span>
         </div>
       ) : (
@@ -48,9 +53,9 @@ export function Scoreboard({ mode, totalScore, lives, framesLeft, frameScore, ne
           <span className="stat-label">This frame</span>
         </div>
       ) : (
-        <div className="stat stat-frame">
-          <span className="stat-value">{nextRewardIn}</span>
-          <span className="stat-label">Next reward</span>
+        <div className="stat">
+          <Lives lives={lives} />
+          <span className="stat-label">Lives</span>
         </div>
       )}
     </div>

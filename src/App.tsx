@@ -7,7 +7,7 @@ import {
   DEFAULT_MODE,
   MODE_LABELS,
   START_FRAMES,
-  SOLVE_FRAME_REWARD,
+  solveFrameReward,
   STARTING_LIVES,
   TILE_COUNT,
   type ClueKey,
@@ -153,22 +153,22 @@ export default function App() {
     setJustEarned(key); // trigger the "reward earned" pop
   }
 
-  function handleWin(movieScore: number) {
+  function handleWin(movieScore: number, framesUsed: number) {
     const nextSolved = solved + 1;
     setTotalScore((s) => s + movieScore);
     setSolved(nextSolved);
     if (mode === 'frames') {
-      // Reward each solve with a frame back, so a good streak can claw its way
-      // out of a near-empty pool instead of only ever bleeding down.
-      setFramesLeft((f) => f + SOLVE_FRAME_REWARD);
+      // Reward the solve with frames back — more for a lean solve — so a good
+      // streak can claw its way out of a near-empty pool instead of only draining.
+      setFramesLeft((f) => f + solveFrameReward(framesUsed));
       if (nextSolved % LIFELINE_EVERY === 0) earnLifeline();
     }
   }
 
-  // A miss: costs a life in Classic; in Frames it ends the run (handled by the
-  // Game's "See results" button routing to finish()).
+  // A miss costs a life in BOTH modes now; the run ends only when lives run out
+  // (the Game routes the last miss's "See results" button to finish()).
   function handleLose() {
-    if (mode === 'classic') setLives((l) => l - 1);
+    setLives((l) => l - 1);
   }
 
   // Spend a lifeline. Tile-reveal effects are applied inside <Game>; the run-
