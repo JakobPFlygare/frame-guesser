@@ -718,12 +718,40 @@ code {
 }
 
 /* --------------------------------------------------------------------------
-   Larger screens: a touch more breathing room
+   Larger screens: keep the same stacked phone layout, just bigger — the column
+   (and with it the 16:9 frame + tiles) grows in steps so a laptop shows a large
+   frame instead of a phone-width one you have to squint at.
    -------------------------------------------------------------------------- */
 @media (min-width: 600px) {
   .app {
     padding-top: 24px;
     gap: 16px;
+  }
+}
+/* Tablet / small laptop */
+@media (min-width: 760px) {
+  .app {
+    max-width: 680px;
+  }
+}
+/* Laptop */
+@media (min-width: 1000px) {
+  .app {
+    max-width: 820px;
+    gap: 18px;
+  }
+  .stat-value {
+    font-size: 26px;
+  }
+}
+/* Large / external monitor — cap so the frame stays comfortably on screen */
+@media (min-width: 1400px) {
+  .app {
+    max-width: 960px;
+    gap: 20px;
+  }
+  .stat-value {
+    font-size: 28px;
   }
 }
 
