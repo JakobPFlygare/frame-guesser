@@ -21,7 +21,11 @@ const MAX_MOVIES = 190;
 const MAX_TV = 60; // 190 + 60 = 250 titles total
 const MOVIE_MIN_VOTES = 250; // higher = more mainstream / less obscure
 const TV_MIN_VOTES = 100;
-const BACKDROPS_PER_TITLE = 6; // frames kept per title; the app picks one per run
+const BACKDROPS_PER_TITLE = 4; // frames kept per title; the app picks one per run
+// A backdrop needs at least this many community votes to count as a "real" frame.
+// The low-vote tail of TMDB backdrops is mostly promo cutouts, title-card art and
+// AI/stylized fan uploads — this floor (with a fallback below) filters them out.
+const MIN_BACKDROP_VOTES = 8;
 const CONCURRENCY = 12;
 // --------------------------------------
 
@@ -121,11 +125,22 @@ async function detail(item, mediaType) {
   const dateStr = (mediaType === 'movie' ? d.release_date : d.first_air_date) || '';
   const director =
     d.credits?.crew?.find((c) => c.job === 'Director')?.name || d.created_by?.[0]?.name;
-  // Several backdrops per title (TMDB returns them vote-sorted, best first), so
-  // the app can show a different frame each run instead of the same still.
+  // Keep only authentic film stills: textless (no title-card / logo art) and
+  // widescreen (16:9), ranked by community rating. TMDB backdrops are community-
+  // uploaded and include a lot of promo cutouts and AI/stylized art; those are
+  // almost always low-voted, so a vote floor plus rating sort surfaces the real
+  // frames. Fallbacks keep coverage for titles with sparse imagery.
+  const byQuality = (a, b) =>
+    (b.vote_average ?? 0) - (a.vote_average ?? 0) || (b.vote_count ?? 0) - (a.vote_count ?? 0);
+  const frames = (d.images?.backdrops ?? [])
+    .filter((b) => b.file_path && b.iso_639_1 == null && (b.aspect_ratio ?? 0) >= 1.7)
+    .sort(byQuality);
+  const strong = frames.filter((b) => (b.vote_count ?? 0) >= MIN_BACKDROP_VOTES);
+  // Prefer well-seen frames; if a title has too few, fall back to any textless
+  // frame, then to TMDB's own hero backdrop, so every title still yields an image.
   const primary = item.backdrop_path || d.backdrop_path;
-  const extra = (d.images?.backdrops ?? []).map((b) => b.file_path).filter(Boolean);
-  const backdropPaths = [...new Set([primary, ...extra].filter(Boolean))].slice(
+  const ranked = (strong.length >= 2 ? strong : frames).map((b) => b.file_path);
+  const backdropPaths = [...new Set([...ranked, primary].filter(Boolean))].slice(
     0,
     BACKDROPS_PER_TITLE,
   );

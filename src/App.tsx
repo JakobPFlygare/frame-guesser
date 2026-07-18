@@ -4,8 +4,6 @@ import { PUZZLES } from './data/puzzles';
 import { loadPuzzleData } from './lib/tmdb';
 import { drawNext } from './lib/deck';
 import {
-  DEFAULT_MODE,
-  MODE_LABELS,
   START_FRAMES,
   solveFrameReward,
   STARTING_LIVES,
@@ -31,24 +29,6 @@ const randomTile = () => Math.floor(Math.random() * TILE_COUNT);
 const puzzleById = new Map(PUZZLES.map((p) => [p.id, p]));
 const puzzleFor = (id: string) => puzzleById.get(id) ?? PUZZLES[0];
 
-const MODE_KEY = 'fg:mode';
-function loadMode(): GameMode {
-  try {
-    const m = localStorage.getItem(MODE_KEY);
-    if (m === 'frames' || m === 'classic') return m;
-  } catch {
-    /* ignore */
-  }
-  return DEFAULT_MODE;
-}
-function saveMode(m: GameMode) {
-  try {
-    localStorage.setItem(MODE_KEY, m);
-  } catch {
-    /* ignore */
-  }
-}
-
 /** Remove the first occurrence of `key` from a lifeline inventory. */
 function removeFirst(list: LifelineKey[], key: LifelineKey): LifelineKey[] {
   const i = list.indexOf(key);
@@ -67,7 +47,10 @@ function initialInventory(m: GameMode): LifelineKey[] {
 }
 
 export default function App() {
-  const [mode, setMode] = useState<GameMode>(loadMode);
+  // Frames is the only mode for now — the Frames/Lives switch has been removed.
+  // Classic code paths remain (branch on `mode`) so the mode can be reinstated
+  // later without rebuilding the game logic.
+  const mode: GameMode = 'frames';
 
   // The persistent deck (lib/deck) hands out ids without repeating until the
   // whole pool is exhausted — across runs and reloads, not just within one run.
@@ -104,9 +87,7 @@ export default function App() {
     window.scrollTo(0, 0);
   }, [round, phase]);
 
-  // Start a fresh run in the given mode (resets every run-level resource).
-  // Defaults to the current mode; changeMode passes the new one explicitly since
-  // the `mode` state hasn't flushed yet at that call site.
+  // Start a fresh run (resets every run-level resource).
   function beginRun(m: GameMode = mode) {
     const opening = initialInventory(m);
     setLives(STARTING_LIVES);
@@ -123,13 +104,6 @@ export default function App() {
     setRound((r) => r + 1);
     setStartTile(randomTile());
     setPhase('playing');
-  }
-
-  function changeMode(m: GameMode) {
-    if (m === mode) return;
-    setMode(m);
-    saveMode(m);
-    beginRun(m); // different rules -> restart the run (m: mode state not flushed yet)
   }
 
   // Move to the next movie, keeping run-level resources.
@@ -198,34 +172,48 @@ export default function App() {
   return (
     <main className="app">
       <header className="app-header">
-        <h1>
-          Frame <span className="fg-mark">Guesser</span>
-        </h1>
-        <button
-          type="button"
-          className="lb-nav"
-          onClick={() => setShowLeaderboard(true)}
-          aria-label="View leaderboard"
-        >
-          <span className="lb-nav-icon" aria-hidden="true" />
-          Leaderboard
-        </button>
-      </header>
-
-      <div className="mode-switch" role="tablist" aria-label="Game mode">
-        {(['frames', 'classic'] as GameMode[]).map((m) => (
+        <div className="brand">
+          <span className="wordmark">
+            Frame <span className="fg-mark">Guesser</span>
+          </span>
+          {phase === 'playing' && (
+            <span className="score-pill" title="Total score this run">
+              <span className="score-num">{totalScore}</span>
+              <span className="score-lbl">score</span>
+            </span>
+          )}
+        </div>
+        <div className="head-right">
           <button
-            key={m}
             type="button"
-            role="tab"
-            aria-selected={mode === m}
-            className={`mode-tab${mode === m ? ' active' : ''}`}
-            onClick={() => changeMode(m)}
+            className="lb-nav"
+            onClick={() => setShowLeaderboard(true)}
+            aria-label="View leaderboard"
           >
-            {MODE_LABELS[m]}
+            <span className="lb-nav-icon" aria-hidden="true" />
+            Leaderboard
           </button>
-        ))}
-      </div>
+          {phase === 'playing' && (
+            <div className="mini-stats">
+              {mode === 'frames' && (
+                <span className="mini-stat" title="Frames left to spend">
+                  <span className="mini-ico frames-ico" aria-hidden="true" />
+                  <span className="mini-num">{framesLeft}</span>
+                  <span className="sr-only"> frames left</span>
+                </span>
+              )}
+              <span
+                className="mini-stat lives-mini"
+                aria-label={`${lives} of ${STARTING_LIVES} lives left`}
+              >
+                {Array.from({ length: STARTING_LIVES }, (_, i) => (
+                  <span key={i} className={i < lives ? 'life' : 'life spent'} aria-hidden="true" />
+                ))}
+              </span>
+            </div>
+          )}
+        </div>
+      </header>
 
       {phase === 'runover' ? (
         <RunOverScreen
@@ -244,7 +232,6 @@ export default function App() {
           lives={lives}
           framesLeft={framesLeft}
           runCluesUsed={runCluesUsed}
-          totalScore={totalScore}
           nextRewardIn={nextRewardIn}
           inventory={inventory}
           freeReveals={freeReveals}

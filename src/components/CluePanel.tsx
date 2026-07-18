@@ -35,16 +35,16 @@ export function CluePanel({ mode, clues, used, runUsed, budget, onUseClue, disab
           const tooPoor = mode === 'classic' && budget < cost;
           const value = clues[key];
 
+          // A clue already spent earlier this run just greys out — no verbose
+          // "used" label, the dimmed row says it.
           return (
-            <li key={key} className="clue-item">
+            <li key={key} className={`clue-item${spentThisRun ? ' clue-item-spent' : ''}`}>
               <span className="clue-name">{CLUE_LABELS[key]}</span>
               {isUsedHere ? (
                 <span className={`clue-value${key === 'pattern' ? ' clue-pattern' : ''}`}>
                   {value ?? 'Unknown'}
                 </span>
-              ) : spentThisRun ? (
-                <span className="clue-spent">Used this run</span>
-              ) : (
+              ) : spentThisRun ? null : (
                 <button
                   type="button"
                   className="clue-button"

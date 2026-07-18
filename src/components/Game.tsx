@@ -15,7 +15,6 @@ import { GuessBox } from './GuessBox';
 import { CluePanel } from './CluePanel';
 import { LifelinePanel } from './LifelinePanel';
 import { RewardPop } from './RewardPop';
-import { Scoreboard } from './Scoreboard';
 import { EndScreen } from './EndScreen';
 
 type Props = {
@@ -26,7 +25,6 @@ type Props = {
   lives: number; // remaining lives — Classic (already reflects this movie)
   framesLeft: number; // remaining frames — Frames mode (run-level)
   runCluesUsed: ClueKey[]; // clues already spent this run — Frames mode
-  totalScore: number; // whole-run score so far
   nextRewardIn: number; // solves until the next lifeline — Frames mode
   inventory: LifelineKey[]; // earned, unspent lifelines — Frames mode
   freeReveals: number; // banked free reveals (Refund) — Frames mode
@@ -50,7 +48,6 @@ export function Game({
   lives,
   framesLeft,
   runCluesUsed,
-  totalScore,
   nextRewardIn,
   inventory,
   freeReveals,
@@ -175,7 +172,9 @@ export function Game({
   let revealHint: string | null = null;
   if (!gameOver) {
     if (mode === 'classic') {
-      revealHint = revealLocked ? 'Out of points — make your guess' : `Next tile costs −${nextTileCost}`;
+      revealHint = revealLocked
+        ? `${score} pts left — make your guess`
+        : `${score} pts · next tile −${nextTileCost}`;
     } else if (freeReveals > 0) {
       revealHint = `${freeReveals} free reveal${freeReveals === 1 ? '' : 's'} · then ${framesLeft} frames`;
     } else if (framesExhausted) {
@@ -187,14 +186,6 @@ export function Game({
 
   return (
     <>
-      <Scoreboard
-        mode={mode}
-        totalScore={totalScore}
-        lives={lives}
-        framesLeft={framesLeft}
-        frameScore={score}
-      />
-
       <div className="frame-wrap">
         <TileGrid
           imageUrl={data.backdropUrl}
