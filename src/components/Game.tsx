@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { Puzzle } from '../data/puzzles';
 import type { PuzzleData } from '../lib/tmdb';
 import { useGameState } from '../hooks/useGameState';
@@ -34,6 +35,13 @@ export function Game({
     initialReveal,
   );
   const gameOver = state.status !== 'playing';
+
+  // When the frame resolves (a guess lands or the player gives up), the result
+  // screen replaces the guess box — jump back to the top so it's in view
+  // instead of leaving the player scrolled down where the keyboard was.
+  useEffect(() => {
+    if (gameOver) window.scrollTo(0, 0);
+  }, [gameOver]);
 
   function handleGuess(text: string) {
     const r = submitGuess(text);
