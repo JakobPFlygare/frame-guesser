@@ -387,6 +387,16 @@
   font-weight: 700;
   color: var(--accent);
 }
+.lb-empty {
+  color: var(--text-dim);
+  text-align: center;
+  padding: 8px 0;
+}
+.lb-error {
+  color: var(--lose);
+  font-size: 14px;
+  margin: 8px 0;
+}
 
 /* Clue panel */
 .clue-panel {

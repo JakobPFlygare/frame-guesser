@@ -56,11 +56,49 @@ to `main`. One-time setup:
 
 No secrets are needed — the puzzle data is already baked into the committed source.
 
+## Shared leaderboard (Supabase)
+
+Out of the box the leaderboard is **local** (per browser, via `localStorage`). To make it
+**shared** — so you and your friends all see the same scores — connect a free Supabase
+project. No server code and no extra npm dependency: the app talks to Supabase's REST API
+directly, and falls back to the local board whenever it isn't configured.
+
+**1. Create the table.** In your Supabase project open **SQL Editor** and run:
+
+```sql
+create table public.scores (
+  id     bigint generated always as identity primary key,
+  name   text    not null check (char_length(name) between 1 and 20),
+  score  integer not null check (score >= 0),
+  solved integer not null default 0 check (solved >= 0),
+  created_at timestamptz not null default now()
+);
+
+-- Lock it down: anyone may READ the board and INSERT a score, nothing else.
+alter table public.scores enable row level security;
+
+create policy "read scores"   on public.scores for select using (true);
+create policy "insert scores" on public.scores for insert with check (
+  char_length(name) between 1 and 20 and score >= 0 and score <= 1000000
+);
+```
+
+Because RLS is on and only `select` + `insert` policies exist, visitors can't update or
+delete anyone's scores — which is why shipping the public key below is safe.
+
+**2. Wire up the keys.** Open `src/config/supabase.ts` and paste in your project's:
+
+- **Project URL** — Project Settings → Data API → Project URL
+- **anon / public key** — Project Settings → API Keys → `anon` `public`
+
+The `anon` key is *publishable* by design; it's meant to live in the browser bundle. Commit
+the file — the GitHub Pages build needs these values, and no secret configuration is required.
+
+**3. Push.** The deploy workflow rebuilds and the shared board goes live. To reset the board,
+delete rows in the Supabase **Table Editor**.
+
 ## Notes
 
-- **The leaderboard is local (per browser).** It uses `localStorage`, so scores aren't
-  shared between people. A shared online leaderboard would need a small backend (e.g.
-  Supabase / Firebase free tier) — a good future addition.
 - Tuning knobs: grid size, starting score, decay rate, lives, and clue costs live in
   `src/config/scoring.ts`.
 
